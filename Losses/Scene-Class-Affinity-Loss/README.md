@@ -17,7 +17,7 @@ Along with architectural contributions, we introduce novel global scene and loca
 Experiments show we outperform the literature on all metrics and datasets while hallucinating plausible scenery even beyond the camera field of view
 
 
-![Scene_Class_Affinity_Loss.jpg](..figure/losses/Scene_Class_Affinity_Loss.jpg)
+![Scene_Class_Affinity_Loss.jpg](../figure/losses/Scene_Class_Affinity_Loss.jpg)
 
 ## Results in 3D SSC
 
