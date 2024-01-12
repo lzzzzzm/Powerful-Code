@@ -16,8 +16,9 @@ and introduces a 3D context relation prior to enforce spatio-semantic consistenc
 Along with architectural contributions, we introduce novel global scene and local frustums losses. 
 Experiments show we outperform the literature on all metrics and datasets while hallucinating plausible scenery even beyond the camera field of view
 
-
-![Scene_Class_Affinity_Loss.jpg](..%2F..%2Ffigure%2Flosses%2FScene_Class_Affinity_Loss.jpg)
+<div align=center>
+<img src="../../figure/losses/Scene_Class_Affinity_Loss.jpg" width=512 height=512>
+</div>
 
 ## Results in 3D SSC
 
