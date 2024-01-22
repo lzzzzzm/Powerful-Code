@@ -17,14 +17,14 @@ def semantic_affinity_loss(pred, ssc_target, mask):
     ###
 
     # Get softmax probabilities
-    pred = F.softmax(pred, dim=1)
+    pred = F.softmax(pred, dim=-1)
     loss = 0
     count = 0
-    n_classes = pred.shape[1]
+    n_classes = pred.shape[-1]
     for i in range(0, n_classes):
 
         # Get probability of class i
-        p = pred[:, i, :, :, :]
+        p = pred[..., i]
 
         # mask other voxels
         p = p[mask]
@@ -63,13 +63,12 @@ def semantic_affinity_loss(pred, ssc_target, mask):
     return loss / count
 
 
-def geometry_scal_loss(pred, ssc_target, empty_class_index, mask):
+def geometry_affinity_loss(pred, ssc_target, empty_class_index, mask):
     # Get softmax probabilities
-    pred = F.softmax(pred, dim=1)
+    pred = F.softmax(pred, dim=-1)
 
     # Compute empty and nonempty probabilities
-    empty_probs = pred[:, empty_class_index, :, :, :]
-    # print('empty_probs.shape', empty_probs.shape)
+    empty_probs = pred[..., empty_class_index]
     nonempty_probs = 1 - empty_probs
 
     # Remove unknown voxels
@@ -82,11 +81,11 @@ def geometry_scal_loss(pred, ssc_target, empty_class_index, mask):
     precision = intersection / nonempty_probs.sum()
     recall = intersection / nonempty_target.sum()
     spec = ((1 - nonempty_target) * (empty_probs)).sum() / (1 - nonempty_target).sum()
-    return (
-            F.binary_cross_entropy(precision, torch.ones_like(precision))
-            + F.binary_cross_entropy(recall, torch.ones_like(recall))
-            + F.binary_cross_entropy(spec, torch.ones_like(spec))
-    )
+
+    geo_loss = F.binary_cross_entropy(precision, torch.ones_like(precision)) + F.binary_cross_entropy(recall, torch.ones_like(recall))
+    if spec > 0:
+        geo_loss += F.binary_cross_entropy(spec, torch.ones_like(spec))
+    return geo_loss
 
 
 class AffinityLoss(nn.Module):
@@ -94,12 +93,14 @@ class AffinityLoss(nn.Module):
                  empty_class_index=17,
                  semantic_loss_weight=1.0,
                  geometry_loss_weight=1.0,
+                 loss_weight=1.0,
                  loss_name='loss_affinity'):
         super(AffinityLoss, self).__init__()
 
         self.empty_class_index = empty_class_index
         self.semantic_loss_weight = semantic_loss_weight
         self.geometry_loss_weight = geometry_loss_weight
+        self.loss_weight = loss_weight
         self.loss_name = loss_name
 
     def forward(self,
@@ -109,22 +110,23 @@ class AffinityLoss(nn.Module):
                 **kwargs):
         """Forward function."""
         if mask == None:
-            mask = torch.ones_like(pred_occ, dtype=torch.bool)
+            mask = torch.ones_like(label_occ, dtype=torch.bool)
 
         semantic_loss = self.semantic_loss_weight * semantic_affinity_loss(pred_occ, label_occ, mask)
-        geometry_loss = self.geometry_loss_weight * geometry_scal_loss(pred_occ, label_occ, self.empty_class_index,
+        geometry_loss = self.geometry_loss_weight * geometry_affinity_loss(pred_occ, label_occ, self.empty_class_index,
                                                                        mask)
         loss = semantic_loss + geometry_loss
-        return loss
+        return self.loss_weight * loss
 
 
 if __name__ == '__main__':
     loss_fn = AffinityLoss()
 
-    pred = torch.rand(1, 18, 32, 32, 32)
-    ssc_target = torch.randint(low=0, high=2, size=(1, 32, 32, 32))
-    mask = torch.rand(1, 32, 32, 32)
-    mask = mask > 0.5
 
+    pred = torch.rand(2, 100, 100, 16, 18)
+    ssc_target = torch.randint(low=0, high=17, size=(2, 100, 100, 16))
+    # mask = torch.rand(1, 32, 32, 32)
+    # mask = mask > 0.5
+    mask = None
     loss = loss_fn(pred, ssc_target, mask)
     print(loss)
