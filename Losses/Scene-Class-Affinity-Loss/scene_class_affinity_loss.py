@@ -72,7 +72,7 @@ def geometry_affinity_loss(pred, ssc_target, empty_class_index, mask):
     nonempty_probs = 1 - empty_probs
 
     # Remove unknown voxels
-    nonempty_target = ssc_target != 0
+    nonempty_target = ssc_target != empty_class_index
     nonempty_target = nonempty_target[mask].float()
     nonempty_probs = nonempty_probs[mask]
     empty_probs = empty_probs[mask]
