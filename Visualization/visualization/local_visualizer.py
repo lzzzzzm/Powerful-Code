@@ -269,6 +269,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                           points_size=4,
                           mode='xyzrgb',
                           points_color: Tuple[float] = (0.8, 0.8, 0.8),
+                          show_color=True,
                           ):
         if not hasattr(self, 'o3d_vis'):
             self.o3d_vis = self._initialize_o3d_vis()
@@ -296,9 +297,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         else:
             raise NotImplementedError
         pcd.colors = o3d.utility.Vector3dVector(points_colors)
-
-        voxelGrid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd, voxel_size=voxel_size)
-        self.o3d_vis.add_geometry(voxelGrid)
+        if show_color:
+            voxelGrid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd, voxel_size=voxel_size)
+            self.o3d_vis.add_geometry(voxelGrid)
 
         line_sets = o3d.geometry.LineSet()
         line_sets.points = o3d.open3d.utility.Vector3dVector(bbox_corners.reshape((-1, 3)))
@@ -309,11 +310,11 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         mesh_frame = geometry.TriangleMesh.create_coordinate_frame(**frame_cfg)
         self.o3d_vis.add_geometry(mesh_frame)
 
-        # update pcd
-        self.o3d_vis.add_geometry(pcd)
-        self.pcd = pcd
-        self.points_colors = points_colors
-
+        if show_color:
+            # update pcd
+            self.o3d_vis.add_geometry(pcd)
+            self.pcd = pcd
+            self.points_colors = points_colors
 
     # TODO: assign 3D Box color according to pred / GT labels
     # We draw GT / pred bboxes on the same point cloud scenes
@@ -325,6 +326,9 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                        points_in_box_color: Tuple[float] = (1, 0, 0),
                        rot_axis: int = 2,
                        center_mode: str = 'lidar_bottom',
+                       trans_matrix=None,
+                       gt_labels_3d=None,
+                       palette=None,
                        mode: str = 'xyz') -> None:
         """Draw bbox on visualizer and change the color of points inside
         bbox3d.
@@ -347,11 +351,20 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         # we need to convert the boxes to Depth mode
         check_type('bboxes', bboxes_3d, BaseInstance3DBoxes)
 
-        if not isinstance(bboxes_3d, DepthInstance3DBoxes):
-            bboxes_3d = bboxes_3d.convert_to(Box3DMode.DEPTH)
+        bboxes_3d_tensor = bboxes_3d.tensor
+        if trans_matrix is not None:
+            trans_matrix = torch.tensor(trans_matrix, dtype=torch.float32)
+            bboxes_3d_tensor[:, :3] = (
+                    trans_matrix[:3, :3] @ bboxes_3d_tensor[:, :3].unsqueeze(-1)).squeeze(-1)
+            bboxes_3d_tensor[:, :3] += trans_matrix[:3, 3]
+        bboxes_3d.tensor = bboxes_3d_tensor
 
-        # convert bboxes to numpy dtype
+        if trans_matrix is None:
+            if not isinstance(bboxes_3d, DepthInstance3DBoxes):
+                bboxes_3d = bboxes_3d.convert_to(Box3DMode.DEPTH)
+
         bboxes_3d = tensor2ndarray(bboxes_3d.tensor)
+        # convert bboxes to numpy dtype
 
         # in_box_color = np.array(points_in_box_color)
         if isinstance(bbox_colors, list):
@@ -364,8 +377,14 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             else:
                 bbox_color = bbox_colors[i]
 
+        if gt_labels_3d is not None:
+            assert palette is not None
+            palette = np.array(palette)
+            bbox_colors = palette[gt_labels_3d]
+
         for i in range(len(bboxes_3d)):
             center = bboxes_3d[i, 0:3]
+            # center[0] += 20
             dim = bboxes_3d[i, 3:6]
             yaw = np.zeros(3)
             yaw[rot_axis] = bboxes_3d[i, 6]
@@ -382,23 +401,27 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             line_set = geometry.LineSet.create_from_oriented_bounding_box(
                 box3d)
             # line_set.paint_uniform_color(np.array(bbox_color[i]) / 255.)
-            line_set.paint_uniform_color(
-                np.array(bbox_color, dtype=np.float64))
+            if palette is None:
+                line_set.paint_uniform_color(
+                    np.array(bbox_color, dtype=np.float64))
+            else:
+                line_set.paint_uniform_color(
+                    np.array(bbox_colors[i], dtype=np.float64))
             # draw bboxes on visualizer
             self.o3d_vis.add_geometry(line_set)
 
             # change the color of points which are in box
-            if self.pcd is not None and mode == 'xyz':
-                indices = box3d.get_point_indices_within_bounding_box(
-                    self.pcd.points)
-                # self.points_colors[indices] = np.array(bbox_color[i]) / 255.
-                self.points_colors[indices] = np.array(
-                    bbox_color, dtype=np.float64)
-
-        # update points colors
-        if self.pcd is not None:
-            self.pcd.colors = o3d.utility.Vector3dVector(self.points_colors)
-            self.o3d_vis.update_geometry(self.pcd)
+        #     if self.pcd is not None and mode == 'xyz':
+        #         indices = box3d.get_point_indices_within_bounding_box(
+        #             self.pcd.points)
+        #         # self.points_colors[indices] = np.array(bbox_color[i]) / 255.
+        #         self.points_colors[indices] = np.array(
+        #             bbox_color, dtype=np.float64)
+        #
+        # # update points colors
+        # if self.pcd is not None:
+        #     self.pcd.colors = o3d.utility.Vector3dVector(self.points_colors)
+        #     self.o3d_vis.update_geometry(self.pcd)
 
     def set_bev_image(self,
                       bev_image: Optional[np.ndarray] = None,
@@ -657,7 +680,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             face_colors=edge_colors)
 
     @master_only
-    def draw_seg_mask(self, seg_mask_colors: np.ndarray) -> None:
+    def draw_seg_mask(self, seg_mask_colors: np.ndarray, pcd_mode) -> None:
         """Add segmentation mask to visualizer via per-point colorization.
 
         Args:
@@ -679,7 +702,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
             offset = 0
         seg_points = copy.deepcopy(seg_mask_colors)
         seg_points[:, 0] += offset
-        self.set_points(seg_points, pcd_mode=2, vis_mode='add', mode='xyzrgb')
+        self.set_points(seg_points, pcd_mode=pcd_mode, vis_mode='add', mode='xyzrgb')
 
     def _draw_instances_3d(self,
                            data_input: dict,
@@ -827,7 +850,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                           pts_seg: PointData,
                           palette: Optional[List[tuple]] = None,
                           keep_index: Optional[int] = None,
-                          ignore_index: Optional[int] = None) -> None:
+                          ignore_index: Optional[int] = None,
+                          pcd_mode=2,) -> None:
         """Draw 3D semantic mask of GT or prediction.
 
         Args:
@@ -858,7 +882,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         pts_color = palette[pts_sem_seg]
         seg_color = np.concatenate([points[:, :3], pts_color], axis=1)
 
-        self.draw_seg_mask(seg_color)
+        self.draw_seg_mask(seg_color, pcd_mode=pcd_mode)
 
     def draw_pts_pred_gt_sem_seg(self,
                                   points,
@@ -897,6 +921,8 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
                           ignore_labels: Optional[List[tuple]] = [0, 17],
                           voxelSize=[0.4, 0.4, 0.4],
                           range=[-40.0, -40.0, -1.0, 40.0, 40.0, 5.4],
+                          vis_mode='add',
+                          show_color=True,
                           keep_index: Optional[int] = None)-> None:
         palette = np.array(palette)
         palette = palette[:, :3] / 255
@@ -915,7 +941,7 @@ class Det3DLocalVisualizer(DetLocalVisualizer):
         edges = edges.reshape((1, 12, 2)).repeat(bboxes_corners.shape[0], 1, 1)
         edges = edges + bases_[:, None, None]
 
-        self.voxellizer_points(points=seg_color, voxel_size=voxelSize[0], ego_points=ego_points, bbox_corners=bboxes_corners.numpy(), linesets=edges.numpy(), mode='xyzrgb')
+        self.voxellizer_points(points=seg_color, voxel_size=voxelSize[0], ego_points=ego_points, bbox_corners=bboxes_corners.numpy(), linesets=edges.numpy(), mode='xyzrgb', vis_mode=vis_mode, show_color=show_color)
 
 
     @master_only
