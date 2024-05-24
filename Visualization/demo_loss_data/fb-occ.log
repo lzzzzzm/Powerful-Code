@@ -1,0 +1,2513 @@
+2024-05-03 00:24:45,214 - mmdet - INFO - Environment info:
+------------------------------------------------------------
+sys.platform: linux
+Python: 3.8.0 (default, Nov  6 2019, 21:49:08) [GCC 7.3.0]
+CUDA available: True
+GPU 0,1,2,3,4,5,6,7: NVIDIA GeForce RTX 4090
+CUDA_HOME: /usr/local/cuda
+NVCC: Cuda compilation tools, release 11.6, V11.6.55
+GCC: gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
+PyTorch: 1.13.0+cu116
+PyTorch compiling details: PyTorch built with:
+  - GCC 9.3
+  - C++ Version: 201402
+  - Intel(R) Math Kernel Library Version 2020.0.0 Product Build 20191122 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v2.6.0 (Git Hash 52b5f107dd9cf10910aaa19cb47f3abf9b349815)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - LAPACK is enabled (usually provided by MKL)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 11.6
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86
+  - CuDNN 8.3.2  (built against CUDA 11.5)
+  - Magma 2.6.1
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=11.6, CUDNN_VERSION=8.3.2, CXX_COMPILER=/opt/rh/devtoolset-9/root/usr/bin/c++, CXX_FLAGS= -fabi-version=11 -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DEDGE_PROFILER_USE_KINETO -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wunused-local-typedefs -Wno-unused-parameter -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Werror=cast-function-type -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.13.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, 
+
+TorchVision: 0.14.0+cu116
+OpenCV: 4.9.0
+MMCV: 1.7.0
+MMCV Compiler: GCC 9.3
+MMCV CUDA Compiler: 11.7
+MMDetection: 2.28.2
+MMSegmentation: 0.30.0
+MMDetection3D: 1.0.0rc4+a4357ec
+spconv2.0: True
+------------------------------------------------------------
+
+2024-05-03 00:24:46,266 - mmdet - INFO - Distributed training: True
+2024-05-03 00:24:47,295 - mmdet - INFO - Config:
+point_cloud_range = [-40, -40, -1.0, 40, 40, 5.4]
+class_names = [
+    'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
+    'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+]
+dataset_type = 'NuScenesDataset'
+data_root = 'data/nuscenes/'
+input_modality = dict(
+    use_lidar=False,
+    use_camera=True,
+    use_radar=False,
+    use_map=False,
+    use_external=False)
+file_client_args = dict(backend='disk')
+train_pipeline = [
+    dict(
+        type='PrepareImageInputs',
+        is_train=True,
+        data_config=dict(
+            cams=[
+                'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+                'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT'
+            ],
+            Ncams=6,
+            input_size=(256, 704),
+            src_size=(900, 1600),
+            resize=(-0.06, 0.11),
+            rot=(-5.4, 5.4),
+            flip=True,
+            crop_h=(0.0, 0.0),
+            resize_test=0.0)),
+    dict(
+        type='LoadAnnotationsBEVDepth',
+        bda_aug_conf=dict(
+            rot_lim=(-22.5, 22.5),
+            scale_lim=(1.0, 1.0),
+            flip_dx_ratio=0.5,
+            flip_dy_ratio=0.5),
+        classes=[
+            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        ]),
+    dict(
+        type='LoadPointsFromFile',
+        coord_type='LIDAR',
+        load_dim=5,
+        use_dim=5,
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='PointToMultiViewDepth',
+        downsample=1,
+        grid_config=dict(
+            x=[-40, 40, 0.8],
+            y=[-40, 40, 0.8],
+            z=[-1, 5.4, 6.4],
+            depth=[2.0, 42.0, 0.5])),
+    dict(
+        type='ObjectRangeFilter',
+        point_cloud_range=[-40, -40, -1.0, 40, 40, 5.4]),
+    dict(
+        type='ObjectNameFilter',
+        classes=[
+            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        ]),
+    dict(
+        type='LoadOccupancy',
+        ignore_nonvisible=True,
+        fix_void=True,
+        occupancy_path='data/nuscenes/gts'),
+    dict(
+        type='DefaultFormatBundle3D',
+        class_names=[
+            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        ]),
+    dict(
+        type='Collect3D',
+        keys=[
+            'img_inputs', 'gt_bboxes_3d', 'gt_labels_3d', 'gt_occupancy',
+            'gt_depth'
+        ])
+]
+test_pipeline = [
+    dict(
+        type='CustomDistMultiScaleFlipAug3D',
+        tta=False,
+        transforms=[
+            dict(
+                type='PrepareImageInputs',
+                data_config=dict(
+                    cams=[
+                        'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+                        'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT'
+                    ],
+                    Ncams=6,
+                    input_size=(256, 704),
+                    src_size=(900, 1600),
+                    resize=(-0.06, 0.11),
+                    rot=(-5.4, 5.4),
+                    flip=True,
+                    crop_h=(0.0, 0.0),
+                    resize_test=0.0)),
+            dict(
+                type='LoadAnnotationsBEVDepth',
+                bda_aug_conf=dict(
+                    rot_lim=(-22.5, 22.5),
+                    scale_lim=(1.0, 1.0),
+                    flip_dx_ratio=0.5,
+                    flip_dy_ratio=0.5),
+                classes=[
+                    'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    'barrier', 'motorcycle', 'bicycle', 'pedestrian',
+                    'traffic_cone'
+                ],
+                is_train=False),
+            dict(
+                type='LoadPointsFromFile',
+                coord_type='LIDAR',
+                load_dim=5,
+                use_dim=5,
+                file_client_args=dict(backend='disk')),
+            dict(type='LoadOccupancy', occupancy_path='data/nuscenes/gts'),
+            dict(
+                type='DefaultFormatBundle3D',
+                class_names=[
+                    'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    'barrier', 'motorcycle', 'bicycle', 'pedestrian',
+                    'traffic_cone'
+                ],
+                with_label=False),
+            dict(
+                type='Collect3D',
+                keys=['points', 'img_inputs', 'gt_occupancy', 'visible_mask'])
+        ])
+]
+eval_pipeline = [
+    dict(
+        type='LoadPointsFromFile',
+        coord_type='LIDAR',
+        load_dim=5,
+        use_dim=5,
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='LoadPointsFromMultiSweeps',
+        sweeps_num=10,
+        file_client_args=dict(backend='disk')),
+    dict(
+        type='DefaultFormatBundle3D',
+        class_names=[
+            'car', 'truck', 'trailer', 'bus', 'construction_vehicle',
+            'bicycle', 'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
+        ],
+        with_label=False),
+    dict(type='Collect3D', keys=['points'])
+]
+data = dict(
+    samples_per_gpu=4,
+    workers_per_gpu=0,
+    test_dataloader=dict(runner_type='IterBasedRunnerEval'),
+    train=dict(
+        type='NuScenesDataset',
+        data_root='data/nuscenes/',
+        ann_file='data/nuscenes/msfbocc-nuscenes_infos_train.pkl',
+        pipeline=[
+            dict(
+                type='PrepareImageInputs',
+                is_train=True,
+                data_config=dict(
+                    cams=[
+                        'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+                        'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT'
+                    ],
+                    Ncams=6,
+                    input_size=(256, 704),
+                    src_size=(900, 1600),
+                    resize=(-0.06, 0.11),
+                    rot=(-5.4, 5.4),
+                    flip=True,
+                    crop_h=(0.0, 0.0),
+                    resize_test=0.0)),
+            dict(
+                type='LoadAnnotationsBEVDepth',
+                bda_aug_conf=dict(
+                    rot_lim=(-22.5, 22.5),
+                    scale_lim=(1.0, 1.0),
+                    flip_dx_ratio=0.5,
+                    flip_dy_ratio=0.5),
+                classes=[
+                    'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    'barrier', 'motorcycle', 'bicycle', 'pedestrian',
+                    'traffic_cone'
+                ]),
+            dict(
+                type='LoadPointsFromFile',
+                coord_type='LIDAR',
+                load_dim=5,
+                use_dim=5,
+                file_client_args=dict(backend='disk')),
+            dict(
+                type='PointToMultiViewDepth',
+                downsample=1,
+                grid_config=dict(
+                    x=[-40, 40, 0.8],
+                    y=[-40, 40, 0.8],
+                    z=[-1, 5.4, 6.4],
+                    depth=[2.0, 42.0, 0.5])),
+            dict(
+                type='ObjectRangeFilter',
+                point_cloud_range=[-40, -40, -1.0, 40, 40, 5.4]),
+            dict(
+                type='ObjectNameFilter',
+                classes=[
+                    'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    'barrier', 'motorcycle', 'bicycle', 'pedestrian',
+                    'traffic_cone'
+                ]),
+            dict(
+                type='LoadOccupancy',
+                ignore_nonvisible=True,
+                fix_void=True,
+                occupancy_path='data/nuscenes/gts'),
+            dict(
+                type='DefaultFormatBundle3D',
+                class_names=[
+                    'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    'barrier', 'motorcycle', 'bicycle', 'pedestrian',
+                    'traffic_cone'
+                ]),
+            dict(
+                type='Collect3D',
+                keys=[
+                    'img_inputs', 'gt_bboxes_3d', 'gt_labels_3d',
+                    'gt_occupancy', 'gt_depth'
+                ])
+        ],
+        classes=[
+            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        ],
+        modality=dict(
+            use_lidar=False,
+            use_camera=True,
+            use_radar=False,
+            use_map=False,
+            use_external=False),
+        test_mode=False,
+        box_type_3d='LiDAR',
+        use_valid_flag=True,
+        img_info_prototype='bevdet',
+        sequences_split_num=2,
+        use_sequence_group_flag=True,
+        filter_empty_gt=False),
+    val=dict(
+        type='NuScenesDataset',
+        data_root='data/nuscenes/',
+        ann_file='data/nuscenes/msfbocc-nuscenes_infos_val.pkl',
+        pipeline=[
+            dict(
+                type='CustomDistMultiScaleFlipAug3D',
+                tta=False,
+                transforms=[
+                    dict(
+                        type='PrepareImageInputs',
+                        data_config=dict(
+                            cams=[
+                                'CAM_FRONT_LEFT', 'CAM_FRONT',
+                                'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT', 'CAM_BACK',
+                                'CAM_BACK_RIGHT'
+                            ],
+                            Ncams=6,
+                            input_size=(256, 704),
+                            src_size=(900, 1600),
+                            resize=(-0.06, 0.11),
+                            rot=(-5.4, 5.4),
+                            flip=True,
+                            crop_h=(0.0, 0.0),
+                            resize_test=0.0)),
+                    dict(
+                        type='LoadAnnotationsBEVDepth',
+                        bda_aug_conf=dict(
+                            rot_lim=(-22.5, 22.5),
+                            scale_lim=(1.0, 1.0),
+                            flip_dx_ratio=0.5,
+                            flip_dy_ratio=0.5),
+                        classes=[
+                            'car', 'truck', 'construction_vehicle', 'bus',
+                            'trailer', 'barrier', 'motorcycle', 'bicycle',
+                            'pedestrian', 'traffic_cone'
+                        ],
+                        is_train=False),
+                    dict(
+                        type='LoadPointsFromFile',
+                        coord_type='LIDAR',
+                        load_dim=5,
+                        use_dim=5,
+                        file_client_args=dict(backend='disk')),
+                    dict(
+                        type='LoadOccupancy',
+                        occupancy_path='data/nuscenes/gts'),
+                    dict(
+                        type='DefaultFormatBundle3D',
+                        class_names=[
+                            'car', 'truck', 'construction_vehicle', 'bus',
+                            'trailer', 'barrier', 'motorcycle', 'bicycle',
+                            'pedestrian', 'traffic_cone'
+                        ],
+                        with_label=False),
+                    dict(
+                        type='Collect3D',
+                        keys=[
+                            'points', 'img_inputs', 'gt_occupancy',
+                            'visible_mask'
+                        ])
+                ])
+        ],
+        classes=[
+            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        ],
+        modality=dict(
+            use_lidar=False,
+            use_camera=True,
+            use_radar=False,
+            use_map=False,
+            use_external=False),
+        test_mode=True,
+        box_type_3d='LiDAR',
+        sequences_split_num=1,
+        img_info_prototype='bevdet',
+        occupancy_path='data/nuscenes/gts',
+        use_sequence_group_flag=True),
+    test=dict(
+        type='NuScenesDataset',
+        data_root='data/nuscenes/',
+        ann_file='data/nuscenes/msfbocc-nuscenes_infos_val.pkl',
+        pipeline=[
+            dict(
+                type='CustomDistMultiScaleFlipAug3D',
+                tta=False,
+                transforms=[
+                    dict(
+                        type='PrepareImageInputs',
+                        data_config=dict(
+                            cams=[
+                                'CAM_FRONT_LEFT', 'CAM_FRONT',
+                                'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT', 'CAM_BACK',
+                                'CAM_BACK_RIGHT'
+                            ],
+                            Ncams=6,
+                            input_size=(256, 704),
+                            src_size=(900, 1600),
+                            resize=(-0.06, 0.11),
+                            rot=(-5.4, 5.4),
+                            flip=True,
+                            crop_h=(0.0, 0.0),
+                            resize_test=0.0)),
+                    dict(
+                        type='LoadAnnotationsBEVDepth',
+                        bda_aug_conf=dict(
+                            rot_lim=(-22.5, 22.5),
+                            scale_lim=(1.0, 1.0),
+                            flip_dx_ratio=0.5,
+                            flip_dy_ratio=0.5),
+                        classes=[
+                            'car', 'truck', 'construction_vehicle', 'bus',
+                            'trailer', 'barrier', 'motorcycle', 'bicycle',
+                            'pedestrian', 'traffic_cone'
+                        ],
+                        is_train=False),
+                    dict(
+                        type='LoadPointsFromFile',
+                        coord_type='LIDAR',
+                        load_dim=5,
+                        use_dim=5,
+                        file_client_args=dict(backend='disk')),
+                    dict(
+                        type='LoadOccupancy',
+                        occupancy_path='data/nuscenes/gts'),
+                    dict(
+                        type='DefaultFormatBundle3D',
+                        class_names=[
+                            'car', 'truck', 'construction_vehicle', 'bus',
+                            'trailer', 'barrier', 'motorcycle', 'bicycle',
+                            'pedestrian', 'traffic_cone'
+                        ],
+                        with_label=False),
+                    dict(
+                        type='Collect3D',
+                        keys=[
+                            'points', 'img_inputs', 'gt_occupancy',
+                            'visible_mask'
+                        ])
+                ])
+        ],
+        classes=[
+            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        ],
+        modality=dict(
+            use_lidar=False,
+            use_camera=True,
+            use_radar=False,
+            use_map=False,
+            use_external=False),
+        test_mode=True,
+        box_type_3d='LiDAR',
+        sequences_split_num=1,
+        img_info_prototype='bevdet',
+        occupancy_path='data/nuscenes/gts',
+        use_sequence_group_flag=True))
+evaluation = dict(
+    interval=8780,
+    pipeline=[
+        dict(
+            type='CustomDistMultiScaleFlipAug3D',
+            tta=False,
+            transforms=[
+                dict(
+                    type='PrepareImageInputs',
+                    data_config=dict(
+                        cams=[
+                            'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+                            'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT'
+                        ],
+                        Ncams=6,
+                        input_size=(256, 704),
+                        src_size=(900, 1600),
+                        resize=(-0.06, 0.11),
+                        rot=(-5.4, 5.4),
+                        flip=True,
+                        crop_h=(0.0, 0.0),
+                        resize_test=0.0)),
+                dict(
+                    type='LoadAnnotationsBEVDepth',
+                    bda_aug_conf=dict(
+                        rot_lim=(-22.5, 22.5),
+                        scale_lim=(1.0, 1.0),
+                        flip_dx_ratio=0.5,
+                        flip_dy_ratio=0.5),
+                    classes=[
+                        'car', 'truck', 'construction_vehicle', 'bus',
+                        'trailer', 'barrier', 'motorcycle', 'bicycle',
+                        'pedestrian', 'traffic_cone'
+                    ],
+                    is_train=False),
+                dict(
+                    type='LoadPointsFromFile',
+                    coord_type='LIDAR',
+                    load_dim=5,
+                    use_dim=5,
+                    file_client_args=dict(backend='disk')),
+                dict(type='LoadOccupancy', occupancy_path='data/nuscenes/gts'),
+                dict(
+                    type='DefaultFormatBundle3D',
+                    class_names=[
+                        'car', 'truck', 'construction_vehicle', 'bus',
+                        'trailer', 'barrier', 'motorcycle', 'bicycle',
+                        'pedestrian', 'traffic_cone'
+                    ],
+                    with_label=False),
+                dict(
+                    type='Collect3D',
+                    keys=[
+                        'points', 'img_inputs', 'gt_occupancy', 'visible_mask'
+                    ])
+            ])
+    ])
+checkpoint_config = dict(interval=439)
+log_config = dict(interval=50, hooks=[dict(type='TextLoggerHook')])
+dist_params = dict(backend='nccl')
+log_level = 'INFO'
+work_dir = './work_dirs/msfbocc-r50-depth-4f-16x4-half-20e'
+load_from = 'ckpts/r50_256x705_depth_pretrain.pth'
+resume_from = None
+workflow = [('train', 1)]
+opencv_num_threads = 0
+mp_start_method = 'fork'
+num_gpus = 8
+samples_per_gpu = 4
+num_iters_per_epoch = 439
+num_epochs = 20
+checkpoint_epoch_interval = 1
+use_custom_eval_hook = True
+train_sequences_split_num = 2
+test_sequences_split_num = 1
+filter_empty_gt = False
+do_history = False
+history_cat_num = 4
+history_cat_conv_out_channels = 160
+data_config = dict(
+    cams=[
+        'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT',
+        'CAM_BACK', 'CAM_BACK_RIGHT'
+    ],
+    Ncams=6,
+    input_size=(256, 704),
+    src_size=(900, 1600),
+    resize=(-0.06, 0.11),
+    rot=(-5.4, 5.4),
+    flip=True,
+    crop_h=(0.0, 0.0),
+    resize_test=0.0)
+bda_aug_conf = dict(
+    rot_lim=(-22.5, 22.5),
+    scale_lim=(1.0, 1.0),
+    flip_dx_ratio=0.5,
+    flip_dy_ratio=0.5)
+use_checkpoint = True
+sync_bn = True
+grid_config = dict(
+    x=[-40, 40, 0.8],
+    y=[-40, 40, 0.8],
+    z=[-1, 5.4, 6.4],
+    depth=[2.0, 42.0, 0.5])
+depth_categories = 80
+grid_config_bevformer = dict(
+    x=[-40, 40, 0.8], y=[-40, 40, 0.8], z=[-1, 5.4, 1.6])
+bev_h_ = 100
+bev_w_ = 100
+numC_Trans = 80
+_dim_ = 256
+_pos_dim_ = 40
+_ffn_dim_ = 320
+_num_levels_ = 1
+empty_idx = 18
+num_cls = 19
+fix_void = True
+img_norm_cfg = None
+occ_size = [200, 200, 16]
+voxel_out_indices = (0, 1, 2)
+voxel_out_channel = 256
+voxel_channels = [64, 128, 256]
+model = dict(
+    type='MSFBOcc',
+    use_depth_supervision=True,
+    fix_void=True,
+    do_history=False,
+    history_cat_num=4,
+    single_bev_num_channels=80,
+    readd=True,
+    img_backbone=dict(
+        pretrained='ckpts/resnet50-0676ba61.pth',
+        type='ResNet',
+        depth=50,
+        num_stages=4,
+        out_indices=(2, 3),
+        frozen_stages=-1,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=False,
+        with_cp=True,
+        style='pytorch'),
+    img_neck=dict(
+        type='CustomFPN',
+        in_channels=[1024, 2048],
+        out_channels=256,
+        num_outs=1,
+        start_level=0,
+        with_cp=True,
+        out_ids=[0]),
+    depth_net=dict(
+        type='CM_DepthNet',
+        in_channels=256,
+        context_channels=80,
+        downsample=16,
+        grid_config=dict(
+            x=[-40, 40, 0.8],
+            y=[-40, 40, 0.8],
+            z=[-1, 5.4, 6.4],
+            depth=[2.0, 42.0, 0.5]),
+        depth_channels=80,
+        with_cp=True,
+        loss_depth_weight=1.0,
+        use_dcn=False),
+    forward_projection=dict(
+        type='LSSViewTransformerFunction',
+        grid_config=dict(
+            x=[-40, 40, 0.8],
+            y=[-40, 40, 0.8],
+            z=[-1, 5.4, 6.4],
+            depth=[2.0, 42.0, 0.5]),
+        input_size=(256, 704),
+        downsample=16),
+    backward_projection=dict(
+        type='BackwardProjection',
+        bev_h=100,
+        bev_w=100,
+        in_channels=80,
+        out_channels=80,
+        pc_range=[-40, -40, -1.0, 40, 40, 5.4],
+        transformer=dict(
+            type='BEVFormer',
+            use_cams_embeds=False,
+            embed_dims=80,
+            encoder=dict(
+                type='bevformer_encoder',
+                num_layers=1,
+                pc_range=[-40, -40, -1.0, 40, 40, 5.4],
+                grid_config=dict(
+                    x=[-40, 40, 0.8], y=[-40, 40, 0.8], z=[-1, 5.4, 1.6]),
+                data_config=dict(
+                    cams=[
+                        'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+                        'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT'
+                    ],
+                    Ncams=6,
+                    input_size=(256, 704),
+                    src_size=(900, 1600),
+                    resize=(-0.06, 0.11),
+                    rot=(-5.4, 5.4),
+                    flip=True,
+                    crop_h=(0.0, 0.0),
+                    resize_test=0.0),
+                return_intermediate=False,
+                transformerlayers=dict(
+                    type='BEVFormerEncoderLayer',
+                    attn_cfgs=[
+                        dict(
+                            type='MultiScaleDeformableAttention',
+                            embed_dims=80,
+                            dropout=0.0,
+                            num_levels=1),
+                        dict(
+                            type='DA_SpatialCrossAttention',
+                            pc_range=[-40, -40, -1.0, 40, 40, 5.4],
+                            dbound=[2.0, 42.0, 0.5],
+                            dropout=0.0,
+                            deformable_attention=dict(
+                                type='DA_MSDeformableAttention',
+                                embed_dims=80,
+                                num_points=8,
+                                num_levels=1),
+                            embed_dims=80)
+                    ],
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        embed_dims=80,
+                        feedforward_channels=320,
+                        ffn_drop=0.0,
+                        act_cfg=dict(type='ReLU', inplace=True)),
+                    feedforward_channels=320,
+                    ffn_dropout=0.0,
+                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
+                                     'ffn', 'norm')))),
+        positional_encoding=dict(
+            type='CustormLearnedPositionalEncoding',
+            num_feats=40,
+            row_num_embed=100,
+            col_num_embed=100)),
+    img_bev_encoder_backbone=dict(
+        type='CustomResNet',
+        numC_input=80,
+        num_channels=[160, 320, 640],
+        stride=[1, 2, 2]),
+    img_bev_encoder_neck=dict(
+        type='FPN_LSS', in_channels=800, out_channels=256),
+    occupancy_head=dict(
+        type='OccImplicitHead',
+        use_focal_loss=True,
+        empty_idx=18,
+        in_channels=256,
+        out_channel=256,
+        bev_z=16,
+        num_classes=19,
+        point_cloud_range=[-40, -40, -1.0, 40, 40, 5.4],
+        loss_weight_cfg=dict(
+            loss_voxel_ce_weight=1.0,
+            loss_voxel_sem_scal_weight=1.0,
+            loss_voxel_geo_scal_weight=1.0,
+            loss_voxel_lovasz_weight=1.0)),
+    pts_bbox_head=None)
+occupancy_path = 'data/nuscenes/gts'
+share_data_config = dict(
+    type='NuScenesDataset',
+    classes=[
+        'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
+        'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+    ],
+    modality=dict(
+        use_lidar=False,
+        use_camera=True,
+        use_radar=False,
+        use_map=False,
+        use_external=False),
+    img_info_prototype='bevdet',
+    occupancy_path='data/nuscenes/gts',
+    use_sequence_group_flag=True)
+test_data_config = dict(
+    pipeline=[
+        dict(
+            type='CustomDistMultiScaleFlipAug3D',
+            tta=False,
+            transforms=[
+                dict(
+                    type='PrepareImageInputs',
+                    data_config=dict(
+                        cams=[
+                            'CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+                            'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT'
+                        ],
+                        Ncams=6,
+                        input_size=(256, 704),
+                        src_size=(900, 1600),
+                        resize=(-0.06, 0.11),
+                        rot=(-5.4, 5.4),
+                        flip=True,
+                        crop_h=(0.0, 0.0),
+                        resize_test=0.0)),
+                dict(
+                    type='LoadAnnotationsBEVDepth',
+                    bda_aug_conf=dict(
+                        rot_lim=(-22.5, 22.5),
+                        scale_lim=(1.0, 1.0),
+                        flip_dx_ratio=0.5,
+                        flip_dy_ratio=0.5),
+                    classes=[
+                        'car', 'truck', 'construction_vehicle', 'bus',
+                        'trailer', 'barrier', 'motorcycle', 'bicycle',
+                        'pedestrian', 'traffic_cone'
+                    ],
+                    is_train=False),
+                dict(
+                    type='LoadPointsFromFile',
+                    coord_type='LIDAR',
+                    load_dim=5,
+                    use_dim=5,
+                    file_client_args=dict(backend='disk')),
+                dict(type='LoadOccupancy', occupancy_path='data/nuscenes/gts'),
+                dict(
+                    type='DefaultFormatBundle3D',
+                    class_names=[
+                        'car', 'truck', 'construction_vehicle', 'bus',
+                        'trailer', 'barrier', 'motorcycle', 'bicycle',
+                        'pedestrian', 'traffic_cone'
+                    ],
+                    with_label=False),
+                dict(
+                    type='Collect3D',
+                    keys=[
+                        'points', 'img_inputs', 'gt_occupancy', 'visible_mask'
+                    ])
+            ])
+    ],
+    sequences_split_num=1,
+    ann_file='data/nuscenes/msfbocc-nuscenes_infos_val.pkl',
+    type='NuScenesDataset',
+    classes=[
+        'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
+        'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+    ],
+    modality=dict(
+        use_lidar=False,
+        use_camera=True,
+        use_radar=False,
+        use_map=False,
+        use_external=False),
+    img_info_prototype='bevdet',
+    occupancy_path='data/nuscenes/gts',
+    use_sequence_group_flag=True)
+key = 'test'
+lr = 0.0002
+optimizer = dict(type='AdamW', lr=0.0002, weight_decay=0.01)
+optimizer_config = dict(grad_clip=dict(max_norm=5, norm_type=2))
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=200,
+    warmup_ratio=0.001,
+    step=[8780])
+runner = dict(type='IterBasedRunner', max_iters=8780)
+custom_hooks = [
+    dict(
+        type='MEGVIIEMAHook',
+        init_updates=10560,
+        priority='NORMAL',
+        interval=878),
+    dict(type='SequentialControlHook', temporal_start_iter=878)
+]
+fp16 = dict(loss_scale='dynamic')
+gpu_ids = range(0, 8)
+
+2024-05-03 00:24:47,296 - mmdet - INFO - Set random seed to 0, deterministic: False
+2024-05-03 00:24:49,230 - mmdet - INFO - initialize ResNet with init_cfg {'type': 'Pretrained', 'checkpoint': 'ckpts/resnet50-0676ba61.pth'}
+2024-05-03 00:24:49,335 - mmdet - INFO - initialize CustomFPN with init_cfg {'type': 'Xavier', 'layer': 'Conv2d', 'distribution': 'uniform'}
+Name of parameter - Initialization information
+
+img_backbone.conv1.weight - torch.Size([64, 3, 7, 7]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.conv1.weight - torch.Size([64, 64, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.downsample.0.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.downsample.1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.0.downsample.1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.conv1.weight - torch.Size([64, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.1.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.conv1.weight - torch.Size([64, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer1.2.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.conv1.weight - torch.Size([128, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.downsample.0.weight - torch.Size([512, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.downsample.1.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.0.downsample.1.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.1.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.2.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer2.3.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.conv1.weight - torch.Size([256, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.downsample.0.weight - torch.Size([1024, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.downsample.1.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.0.downsample.1.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.1.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.2.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.3.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.4.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer3.5.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.conv1.weight - torch.Size([512, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.downsample.0.weight - torch.Size([2048, 1024, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.downsample.1.weight - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.0.downsample.1.bias - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.conv1.weight - torch.Size([512, 2048, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.1.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.conv1.weight - torch.Size([512, 2048, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_backbone.layer4.2.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from ckpts/resnet50-0676ba61.pth 
+
+img_neck.lateral_convs.0.conv.weight - torch.Size([256, 1024, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+img_neck.lateral_convs.0.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_neck.lateral_convs.1.conv.weight - torch.Size([256, 2048, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+img_neck.lateral_convs.1.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_neck.fpn_convs.0.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+img_neck.fpn_convs.0.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+forward_projection.dx - torch.Size([3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+forward_projection.bx - torch.Size([3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+forward_projection.nx - torch.Size([3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.conv1.weight - torch.Size([160, 80, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.bn1.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.bn1.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.conv2.weight - torch.Size([160, 160, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.bn2.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.bn2.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.downsample.weight - torch.Size([160, 80, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.0.downsample.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.1.conv1.weight - torch.Size([160, 160, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.1.bn1.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.1.bn1.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.1.conv2.weight - torch.Size([160, 160, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.1.bn2.weight - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.0.1.bn2.bias - torch.Size([160]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.conv1.weight - torch.Size([320, 160, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.bn1.weight - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.bn1.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.conv2.weight - torch.Size([320, 320, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.bn2.weight - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.bn2.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.downsample.weight - torch.Size([320, 160, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.0.downsample.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.1.conv1.weight - torch.Size([320, 320, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.1.bn1.weight - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.1.bn1.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.1.conv2.weight - torch.Size([320, 320, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.1.bn2.weight - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.1.1.bn2.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.conv1.weight - torch.Size([640, 320, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.bn1.weight - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.bn1.bias - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.conv2.weight - torch.Size([640, 640, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.bn2.weight - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.bn2.bias - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.downsample.weight - torch.Size([640, 320, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.0.downsample.bias - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.1.conv1.weight - torch.Size([640, 640, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.1.bn1.weight - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.1.bn1.bias - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.1.conv2.weight - torch.Size([640, 640, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.1.bn2.weight - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_backbone.layers.2.1.bn2.bias - torch.Size([640]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.conv.0.weight - torch.Size([512, 800, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.conv.1.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.conv.1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.conv.3.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.conv.4.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.conv.4.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.up2.1.weight - torch.Size([256, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.up2.2.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.up2.2.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.up2.4.weight - torch.Size([256, 256, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+img_bev_encoder_neck.up2.4.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.positional_encoding.row_embed.weight - torch.Size([100, 40]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.positional_encoding.col_embed.weight - torch.Size([100, 40]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.cams_embeds - torch.Size([6, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.sampling_offsets.weight - torch.Size([64, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.sampling_offsets.bias - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.attention_weights.weight - torch.Size([32, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.attention_weights.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.value_proj.weight - torch.Size([80, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.value_proj.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.output_proj.weight - torch.Size([80, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.0.output_proj.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.sampling_offsets.weight - torch.Size([128, 80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.sampling_offsets.bias - torch.Size([128]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.attention_weights.weight - torch.Size([64, 80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.attention_weights.bias - torch.Size([64]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.value_proj.weight - torch.Size([80, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.value_proj.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.output_proj.weight - torch.Size([80, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.attentions.1.output_proj.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.ffns.0.layers.0.0.weight - torch.Size([320, 80]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.ffns.0.layers.0.0.bias - torch.Size([320]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.ffns.0.layers.1.weight - torch.Size([80, 320]): 
+Initialized by user-defined `init_weights` in BackwardProjection  
+
+backward_projection.transformer.encoder.layers.0.ffns.0.layers.1.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.norms.0.weight - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.norms.0.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.norms.1.weight - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.norms.1.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.norms.2.weight - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.transformer.encoder.layers.0.norms.2.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+backward_projection.bev_embedding.weight - torch.Size([10000, 80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.reduce_conv.0.weight - torch.Size([512, 256, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.reduce_conv.0.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.reduce_conv.1.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.reduce_conv.1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_conv.weight - torch.Size([80, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_conv.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.bn.weight - torch.Size([27]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.bn.bias - torch.Size([27]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_mlp.fc1.weight - torch.Size([512, 27]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_mlp.fc1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_mlp.fc2.weight - torch.Size([512, 512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_mlp.fc2.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_se.conv_reduce.weight - torch.Size([512, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_se.conv_reduce.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_se.conv_expand.weight - torch.Size([512, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_se.conv_expand.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_mlp.fc1.weight - torch.Size([512, 27]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_mlp.fc1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_mlp.fc2.weight - torch.Size([512, 512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_mlp.fc2.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_se.conv_reduce.weight - torch.Size([512, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_se.conv_reduce.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_se.conv_expand.weight - torch.Size([512, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.context_se.conv_expand.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.0.conv1.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.0.bn1.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.0.bn1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.0.conv2.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.0.bn2.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.0.bn2.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.1.conv1.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.1.bn1.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.1.bn1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.1.conv2.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.1.bn2.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.1.bn2.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.2.conv1.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.2.bn1.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.2.bn1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.2.conv2.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.2.bn2.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.2.bn2.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp1.atrous_conv.weight - torch.Size([512, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp1.bn.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp1.bn.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp2.atrous_conv.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp2.bn.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp2.bn.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp3.atrous_conv.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp3.bn.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp3.bn.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp4.atrous_conv.weight - torch.Size([512, 512, 3, 3]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp4.bn.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.aspp4.bn.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.global_avg_pool.1.weight - torch.Size([512, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.global_avg_pool.2.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.global_avg_pool.2.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.conv1.weight - torch.Size([512, 2560, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.bn1.weight - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.3.bn1.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.4.weight - torch.Size([80, 512, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+depth_net.depth_conv.4.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+occupancy_head.final_conv.conv.weight - torch.Size([256, 256, 3, 3]): 
+Initialized by user-defined `init_weights` in ConvModule  
+
+occupancy_head.final_conv.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+occupancy_head.predicter.0.weight - torch.Size([512, 256]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+occupancy_head.predicter.0.bias - torch.Size([512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+occupancy_head.predicter.2.weight - torch.Size([304, 512]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+occupancy_head.predicter.2.bias - torch.Size([304]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_time_conv.0.weight - torch.Size([80, 81, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_time_conv.0.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_time_conv.1.weight - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_time_conv.1.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_cat_conv.0.weight - torch.Size([80, 400, 1, 1]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_cat_conv.0.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_cat_conv.1.weight - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+
+history_keyframe_cat_conv.1.bias - torch.Size([80]): 
+The value is the same before and after calling `init_weights` of MSFBOcc  
+2024-05-03 00:24:49,369 - mmdet - INFO - Model:
+MSFBOcc(
+  (img_backbone): ResNet(
+    (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (relu): ReLU(inplace=True)
+    (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+    (layer1): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer2): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (3): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer3): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (3): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (4): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (5): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer4): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+  )
+  init_cfg={'type': 'Pretrained', 'checkpoint': 'ckpts/resnet50-0676ba61.pth'}
+  (img_neck): CustomFPN(
+    (lateral_convs): ModuleList(
+      (0): ConvModule(
+        (conv): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1))
+      )
+      (1): ConvModule(
+        (conv): Conv2d(2048, 256, kernel_size=(1, 1), stride=(1, 1))
+      )
+    )
+    (fpn_convs): ModuleList(
+      (0): ConvModule(
+        (conv): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+    )
+  )
+  init_cfg={'type': 'Xavier', 'layer': 'Conv2d', 'distribution': 'uniform'}
+  (forward_projection): LSSViewTransformerFunction()
+  (img_bev_encoder_backbone): CustomResNet(
+    (layers): Sequential(
+      (0): Sequential(
+        (0): BasicBlock(
+          (conv1): Conv2d(80, 160, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn1): SyncBatchNorm(160, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (conv2): Conv2d(160, 160, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn2): SyncBatchNorm(160, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+          (downsample): Conv2d(80, 160, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        )
+        (1): BasicBlock(
+          (conv1): Conv2d(160, 160, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn1): SyncBatchNorm(160, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (conv2): Conv2d(160, 160, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn2): SyncBatchNorm(160, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+      (1): Sequential(
+        (0): BasicBlock(
+          (conv1): Conv2d(160, 320, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+          (bn1): SyncBatchNorm(320, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (conv2): Conv2d(320, 320, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn2): SyncBatchNorm(320, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+          (downsample): Conv2d(160, 320, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        )
+        (1): BasicBlock(
+          (conv1): Conv2d(320, 320, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn1): SyncBatchNorm(320, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (conv2): Conv2d(320, 320, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn2): SyncBatchNorm(320, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+      (2): Sequential(
+        (0): BasicBlock(
+          (conv1): Conv2d(320, 640, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+          (bn1): SyncBatchNorm(640, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (conv2): Conv2d(640, 640, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn2): SyncBatchNorm(640, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+          (downsample): Conv2d(320, 640, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        )
+        (1): BasicBlock(
+          (conv1): Conv2d(640, 640, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn1): SyncBatchNorm(640, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (conv2): Conv2d(640, 640, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (bn2): SyncBatchNorm(640, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU(inplace=True)
+        )
+      )
+    )
+  )
+  (img_bev_encoder_neck): FPN_LSS(
+    (up): Upsample(scale_factor=4.0, mode=bilinear)
+    (conv): Sequential(
+      (0): Conv2d(800, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU(inplace=True)
+      (3): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (4): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (5): ReLU(inplace=True)
+    )
+    (up2): Sequential(
+      (0): Upsample(scale_factor=2.0, mode=bilinear)
+      (1): Conv2d(512, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (3): ReLU(inplace=True)
+      (4): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
+    )
+  )
+  (backward_projection): BackwardProjection(
+    (positional_encoding): CustormLearnedPositionalEncoding(num_feats=40, row_num_embed=100, col_num_embed=100)
+    (transformer): BEVFormer(
+      (encoder): bevformer_encoder(
+        (layers): ModuleList(
+          (0): BEVFormerEncoderLayer(
+            (attentions): ModuleList(
+              (0): MultiScaleDeformableAttention(
+                (dropout): Dropout(p=0.0, inplace=False)
+                (sampling_offsets): Linear(in_features=80, out_features=64, bias=True)
+                (attention_weights): Linear(in_features=80, out_features=32, bias=True)
+                (value_proj): Linear(in_features=80, out_features=80, bias=True)
+                (output_proj): Linear(in_features=80, out_features=80, bias=True)
+              )
+              (1): DA_SpatialCrossAttention(
+                (dropout): Dropout(p=0.0, inplace=False)
+                (deformable_attention): DA_MSDeformableAttention(
+                  (sampling_offsets): Linear(in_features=80, out_features=128, bias=True)
+                  (attention_weights): Linear(in_features=80, out_features=64, bias=True)
+                  (value_proj): Linear(in_features=80, out_features=80, bias=True)
+                )
+                (output_proj): Linear(in_features=80, out_features=80, bias=True)
+              )
+            )
+            (ffns): ModuleList(
+              (0): FFN(
+                (activate): ReLU(inplace=True)
+                (layers): Sequential(
+                  (0): Sequential(
+                    (0): Linear(in_features=80, out_features=320, bias=True)
+                    (1): ReLU(inplace=True)
+                    (2): Dropout(p=0.0, inplace=False)
+                  )
+                  (1): Linear(in_features=320, out_features=80, bias=True)
+                  (2): Dropout(p=0.0, inplace=False)
+                )
+                (dropout_layer): Identity()
+              )
+            )
+            (norms): ModuleList(
+              (0): LayerNorm((80,), eps=1e-05, elementwise_affine=True)
+              (1): LayerNorm((80,), eps=1e-05, elementwise_affine=True)
+              (2): LayerNorm((80,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+    )
+    (bev_embedding): Embedding(10000, 80)
+  )
+  (depth_net): CM_DepthNet(
+    (reduce_conv): Sequential(
+      (0): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU(inplace=True)
+    )
+    (context_conv): Conv2d(512, 80, kernel_size=(1, 1), stride=(1, 1))
+    (bn): SyncBatchNorm(27, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (depth_mlp): Mlp(
+      (fc1): Linear(in_features=27, out_features=512, bias=True)
+      (act): ReLU()
+      (drop1): Dropout(p=0.0, inplace=False)
+      (fc2): Linear(in_features=512, out_features=512, bias=True)
+      (drop2): Dropout(p=0.0, inplace=False)
+    )
+    (depth_se): SELayer(
+      (conv_reduce): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1))
+      (act1): ReLU()
+      (conv_expand): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1))
+      (gate): Sigmoid()
+    )
+    (context_mlp): Mlp(
+      (fc1): Linear(in_features=27, out_features=512, bias=True)
+      (act): ReLU()
+      (drop1): Dropout(p=0.0, inplace=False)
+      (fc2): Linear(in_features=512, out_features=512, bias=True)
+      (drop2): Dropout(p=0.0, inplace=False)
+    )
+    (context_se): SELayer(
+      (conv_reduce): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1))
+      (act1): ReLU()
+      (conv_expand): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1))
+      (gate): Sigmoid()
+    )
+    (depth_conv): Sequential(
+      (0): BasicBlock(
+        (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (1): BasicBlock(
+        (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): BasicBlock(
+        (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (3): ASPP(
+        (aspp1): _ASPPModule(
+          (atrous_conv): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU()
+        )
+        (aspp2): _ASPPModule(
+          (atrous_conv): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(6, 6), dilation=(6, 6), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU()
+        )
+        (aspp3): _ASPPModule(
+          (atrous_conv): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(12, 12), dilation=(12, 12), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU()
+        )
+        (aspp4): _ASPPModule(
+          (atrous_conv): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(18, 18), dilation=(18, 18), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (relu): ReLU()
+        )
+        (global_avg_pool): Sequential(
+          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+          (1): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (3): ReLU()
+        )
+        (conv1): Conv2d(2560, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU()
+        (dropout): Dropout(p=0.5, inplace=False)
+      )
+      (4): Conv2d(512, 80, kernel_size=(1, 1), stride=(1, 1))
+    )
+  )
+  (occupancy_head): OccImplicitHead(
+    (final_conv): ConvModule(
+      (conv): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (activate): ReLU(inplace=True)
+    )
+    (predicter): Sequential(
+      (0): Linear(in_features=256, out_features=512, bias=True)
+      (1): Softplus(beta=1, threshold=20)
+      (2): Linear(in_features=512, out_features=304, bias=True)
+    )
+    (focal_loss): CustomFocalLoss()
+  )
+  (history_keyframe_time_conv): Sequential(
+    (0): Conv2d(81, 80, kernel_size=(1, 1), stride=(1, 1))
+    (1): SyncBatchNorm(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (2): ReLU(inplace=True)
+  )
+  (history_keyframe_cat_conv): Sequential(
+    (0): Conv2d(400, 80, kernel_size=(1, 1), stride=(1, 1))
+    (1): SyncBatchNorm(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (2): ReLU(inplace=True)
+  )
+)
+2024-05-03 00:24:56,108 - mmdet - INFO - load checkpoint from local path: ckpts/r50_256x705_depth_pretrain.pth
+2024-05-03 00:24:56,287 - mmdet - WARNING - The model and loaded state dict do not match exactly
+
+unexpected key in source state_dict: depth_plugin_net.img_backbone.conv1.weight, depth_plugin_net.img_backbone.bn1.weight, depth_plugin_net.img_backbone.bn1.bias, depth_plugin_net.img_backbone.bn1.running_mean, depth_plugin_net.img_backbone.bn1.running_var, depth_plugin_net.img_backbone.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer1.0.conv1.weight, depth_plugin_net.img_backbone.layer1.0.bn1.weight, depth_plugin_net.img_backbone.layer1.0.bn1.bias, depth_plugin_net.img_backbone.layer1.0.bn1.running_mean, depth_plugin_net.img_backbone.layer1.0.bn1.running_var, depth_plugin_net.img_backbone.layer1.0.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer1.0.conv2.weight, depth_plugin_net.img_backbone.layer1.0.bn2.weight, depth_plugin_net.img_backbone.layer1.0.bn2.bias, depth_plugin_net.img_backbone.layer1.0.bn2.running_mean, depth_plugin_net.img_backbone.layer1.0.bn2.running_var, depth_plugin_net.img_backbone.layer1.0.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer1.0.conv3.weight, depth_plugin_net.img_backbone.layer1.0.bn3.weight, depth_plugin_net.img_backbone.layer1.0.bn3.bias, depth_plugin_net.img_backbone.layer1.0.bn3.running_mean, depth_plugin_net.img_backbone.layer1.0.bn3.running_var, depth_plugin_net.img_backbone.layer1.0.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer1.0.downsample.0.weight, depth_plugin_net.img_backbone.layer1.0.downsample.1.weight, depth_plugin_net.img_backbone.layer1.0.downsample.1.bias, depth_plugin_net.img_backbone.layer1.0.downsample.1.running_mean, depth_plugin_net.img_backbone.layer1.0.downsample.1.running_var, depth_plugin_net.img_backbone.layer1.0.downsample.1.num_batches_tracked, depth_plugin_net.img_backbone.layer1.1.conv1.weight, depth_plugin_net.img_backbone.layer1.1.bn1.weight, depth_plugin_net.img_backbone.layer1.1.bn1.bias, depth_plugin_net.img_backbone.layer1.1.bn1.running_mean, depth_plugin_net.img_backbone.layer1.1.bn1.running_var, depth_plugin_net.img_backbone.layer1.1.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer1.1.conv2.weight, depth_plugin_net.img_backbone.layer1.1.bn2.weight, depth_plugin_net.img_backbone.layer1.1.bn2.bias, depth_plugin_net.img_backbone.layer1.1.bn2.running_mean, depth_plugin_net.img_backbone.layer1.1.bn2.running_var, depth_plugin_net.img_backbone.layer1.1.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer1.1.conv3.weight, depth_plugin_net.img_backbone.layer1.1.bn3.weight, depth_plugin_net.img_backbone.layer1.1.bn3.bias, depth_plugin_net.img_backbone.layer1.1.bn3.running_mean, depth_plugin_net.img_backbone.layer1.1.bn3.running_var, depth_plugin_net.img_backbone.layer1.1.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer1.2.conv1.weight, depth_plugin_net.img_backbone.layer1.2.bn1.weight, depth_plugin_net.img_backbone.layer1.2.bn1.bias, depth_plugin_net.img_backbone.layer1.2.bn1.running_mean, depth_plugin_net.img_backbone.layer1.2.bn1.running_var, depth_plugin_net.img_backbone.layer1.2.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer1.2.conv2.weight, depth_plugin_net.img_backbone.layer1.2.bn2.weight, depth_plugin_net.img_backbone.layer1.2.bn2.bias, depth_plugin_net.img_backbone.layer1.2.bn2.running_mean, depth_plugin_net.img_backbone.layer1.2.bn2.running_var, depth_plugin_net.img_backbone.layer1.2.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer1.2.conv3.weight, depth_plugin_net.img_backbone.layer1.2.bn3.weight, depth_plugin_net.img_backbone.layer1.2.bn3.bias, depth_plugin_net.img_backbone.layer1.2.bn3.running_mean, depth_plugin_net.img_backbone.layer1.2.bn3.running_var, depth_plugin_net.img_backbone.layer1.2.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer2.0.conv1.weight, depth_plugin_net.img_backbone.layer2.0.bn1.weight, depth_plugin_net.img_backbone.layer2.0.bn1.bias, depth_plugin_net.img_backbone.layer2.0.bn1.running_mean, depth_plugin_net.img_backbone.layer2.0.bn1.running_var, depth_plugin_net.img_backbone.layer2.0.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer2.0.conv2.weight, depth_plugin_net.img_backbone.layer2.0.bn2.weight, depth_plugin_net.img_backbone.layer2.0.bn2.bias, depth_plugin_net.img_backbone.layer2.0.bn2.running_mean, depth_plugin_net.img_backbone.layer2.0.bn2.running_var, depth_plugin_net.img_backbone.layer2.0.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer2.0.conv3.weight, depth_plugin_net.img_backbone.layer2.0.bn3.weight, depth_plugin_net.img_backbone.layer2.0.bn3.bias, depth_plugin_net.img_backbone.layer2.0.bn3.running_mean, depth_plugin_net.img_backbone.layer2.0.bn3.running_var, depth_plugin_net.img_backbone.layer2.0.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer2.0.downsample.0.weight, depth_plugin_net.img_backbone.layer2.0.downsample.1.weight, depth_plugin_net.img_backbone.layer2.0.downsample.1.bias, depth_plugin_net.img_backbone.layer2.0.downsample.1.running_mean, depth_plugin_net.img_backbone.layer2.0.downsample.1.running_var, depth_plugin_net.img_backbone.layer2.0.downsample.1.num_batches_tracked, depth_plugin_net.img_backbone.layer2.1.conv1.weight, depth_plugin_net.img_backbone.layer2.1.bn1.weight, depth_plugin_net.img_backbone.layer2.1.bn1.bias, depth_plugin_net.img_backbone.layer2.1.bn1.running_mean, depth_plugin_net.img_backbone.layer2.1.bn1.running_var, depth_plugin_net.img_backbone.layer2.1.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer2.1.conv2.weight, depth_plugin_net.img_backbone.layer2.1.bn2.weight, depth_plugin_net.img_backbone.layer2.1.bn2.bias, depth_plugin_net.img_backbone.layer2.1.bn2.running_mean, depth_plugin_net.img_backbone.layer2.1.bn2.running_var, depth_plugin_net.img_backbone.layer2.1.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer2.1.conv3.weight, depth_plugin_net.img_backbone.layer2.1.bn3.weight, depth_plugin_net.img_backbone.layer2.1.bn3.bias, depth_plugin_net.img_backbone.layer2.1.bn3.running_mean, depth_plugin_net.img_backbone.layer2.1.bn3.running_var, depth_plugin_net.img_backbone.layer2.1.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer2.2.conv1.weight, depth_plugin_net.img_backbone.layer2.2.bn1.weight, depth_plugin_net.img_backbone.layer2.2.bn1.bias, depth_plugin_net.img_backbone.layer2.2.bn1.running_mean, depth_plugin_net.img_backbone.layer2.2.bn1.running_var, depth_plugin_net.img_backbone.layer2.2.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer2.2.conv2.weight, depth_plugin_net.img_backbone.layer2.2.bn2.weight, depth_plugin_net.img_backbone.layer2.2.bn2.bias, depth_plugin_net.img_backbone.layer2.2.bn2.running_mean, depth_plugin_net.img_backbone.layer2.2.bn2.running_var, depth_plugin_net.img_backbone.layer2.2.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer2.2.conv3.weight, depth_plugin_net.img_backbone.layer2.2.bn3.weight, depth_plugin_net.img_backbone.layer2.2.bn3.bias, depth_plugin_net.img_backbone.layer2.2.bn3.running_mean, depth_plugin_net.img_backbone.layer2.2.bn3.running_var, depth_plugin_net.img_backbone.layer2.2.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer2.3.conv1.weight, depth_plugin_net.img_backbone.layer2.3.bn1.weight, depth_plugin_net.img_backbone.layer2.3.bn1.bias, depth_plugin_net.img_backbone.layer2.3.bn1.running_mean, depth_plugin_net.img_backbone.layer2.3.bn1.running_var, depth_plugin_net.img_backbone.layer2.3.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer2.3.conv2.weight, depth_plugin_net.img_backbone.layer2.3.bn2.weight, depth_plugin_net.img_backbone.layer2.3.bn2.bias, depth_plugin_net.img_backbone.layer2.3.bn2.running_mean, depth_plugin_net.img_backbone.layer2.3.bn2.running_var, depth_plugin_net.img_backbone.layer2.3.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer2.3.conv3.weight, depth_plugin_net.img_backbone.layer2.3.bn3.weight, depth_plugin_net.img_backbone.layer2.3.bn3.bias, depth_plugin_net.img_backbone.layer2.3.bn3.running_mean, depth_plugin_net.img_backbone.layer2.3.bn3.running_var, depth_plugin_net.img_backbone.layer2.3.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer3.0.conv1.weight, depth_plugin_net.img_backbone.layer3.0.bn1.weight, depth_plugin_net.img_backbone.layer3.0.bn1.bias, depth_plugin_net.img_backbone.layer3.0.bn1.running_mean, depth_plugin_net.img_backbone.layer3.0.bn1.running_var, depth_plugin_net.img_backbone.layer3.0.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.0.conv2.weight, depth_plugin_net.img_backbone.layer3.0.bn2.weight, depth_plugin_net.img_backbone.layer3.0.bn2.bias, depth_plugin_net.img_backbone.layer3.0.bn2.running_mean, depth_plugin_net.img_backbone.layer3.0.bn2.running_var, depth_plugin_net.img_backbone.layer3.0.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer3.0.conv3.weight, depth_plugin_net.img_backbone.layer3.0.bn3.weight, depth_plugin_net.img_backbone.layer3.0.bn3.bias, depth_plugin_net.img_backbone.layer3.0.bn3.running_mean, depth_plugin_net.img_backbone.layer3.0.bn3.running_var, depth_plugin_net.img_backbone.layer3.0.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer3.0.downsample.0.weight, depth_plugin_net.img_backbone.layer3.0.downsample.1.weight, depth_plugin_net.img_backbone.layer3.0.downsample.1.bias, depth_plugin_net.img_backbone.layer3.0.downsample.1.running_mean, depth_plugin_net.img_backbone.layer3.0.downsample.1.running_var, depth_plugin_net.img_backbone.layer3.0.downsample.1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.1.conv1.weight, depth_plugin_net.img_backbone.layer3.1.bn1.weight, depth_plugin_net.img_backbone.layer3.1.bn1.bias, depth_plugin_net.img_backbone.layer3.1.bn1.running_mean, depth_plugin_net.img_backbone.layer3.1.bn1.running_var, depth_plugin_net.img_backbone.layer3.1.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.1.conv2.weight, depth_plugin_net.img_backbone.layer3.1.bn2.weight, depth_plugin_net.img_backbone.layer3.1.bn2.bias, depth_plugin_net.img_backbone.layer3.1.bn2.running_mean, depth_plugin_net.img_backbone.layer3.1.bn2.running_var, depth_plugin_net.img_backbone.layer3.1.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer3.1.conv3.weight, depth_plugin_net.img_backbone.layer3.1.bn3.weight, depth_plugin_net.img_backbone.layer3.1.bn3.bias, depth_plugin_net.img_backbone.layer3.1.bn3.running_mean, depth_plugin_net.img_backbone.layer3.1.bn3.running_var, depth_plugin_net.img_backbone.layer3.1.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer3.2.conv1.weight, depth_plugin_net.img_backbone.layer3.2.bn1.weight, depth_plugin_net.img_backbone.layer3.2.bn1.bias, depth_plugin_net.img_backbone.layer3.2.bn1.running_mean, depth_plugin_net.img_backbone.layer3.2.bn1.running_var, depth_plugin_net.img_backbone.layer3.2.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.2.conv2.weight, depth_plugin_net.img_backbone.layer3.2.bn2.weight, depth_plugin_net.img_backbone.layer3.2.bn2.bias, depth_plugin_net.img_backbone.layer3.2.bn2.running_mean, depth_plugin_net.img_backbone.layer3.2.bn2.running_var, depth_plugin_net.img_backbone.layer3.2.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer3.2.conv3.weight, depth_plugin_net.img_backbone.layer3.2.bn3.weight, depth_plugin_net.img_backbone.layer3.2.bn3.bias, depth_plugin_net.img_backbone.layer3.2.bn3.running_mean, depth_plugin_net.img_backbone.layer3.2.bn3.running_var, depth_plugin_net.img_backbone.layer3.2.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer3.3.conv1.weight, depth_plugin_net.img_backbone.layer3.3.bn1.weight, depth_plugin_net.img_backbone.layer3.3.bn1.bias, depth_plugin_net.img_backbone.layer3.3.bn1.running_mean, depth_plugin_net.img_backbone.layer3.3.bn1.running_var, depth_plugin_net.img_backbone.layer3.3.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.3.conv2.weight, depth_plugin_net.img_backbone.layer3.3.bn2.weight, depth_plugin_net.img_backbone.layer3.3.bn2.bias, depth_plugin_net.img_backbone.layer3.3.bn2.running_mean, depth_plugin_net.img_backbone.layer3.3.bn2.running_var, depth_plugin_net.img_backbone.layer3.3.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer3.3.conv3.weight, depth_plugin_net.img_backbone.layer3.3.bn3.weight, depth_plugin_net.img_backbone.layer3.3.bn3.bias, depth_plugin_net.img_backbone.layer3.3.bn3.running_mean, depth_plugin_net.img_backbone.layer3.3.bn3.running_var, depth_plugin_net.img_backbone.layer3.3.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer3.4.conv1.weight, depth_plugin_net.img_backbone.layer3.4.bn1.weight, depth_plugin_net.img_backbone.layer3.4.bn1.bias, depth_plugin_net.img_backbone.layer3.4.bn1.running_mean, depth_plugin_net.img_backbone.layer3.4.bn1.running_var, depth_plugin_net.img_backbone.layer3.4.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.4.conv2.weight, depth_plugin_net.img_backbone.layer3.4.bn2.weight, depth_plugin_net.img_backbone.layer3.4.bn2.bias, depth_plugin_net.img_backbone.layer3.4.bn2.running_mean, depth_plugin_net.img_backbone.layer3.4.bn2.running_var, depth_plugin_net.img_backbone.layer3.4.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer3.4.conv3.weight, depth_plugin_net.img_backbone.layer3.4.bn3.weight, depth_plugin_net.img_backbone.layer3.4.bn3.bias, depth_plugin_net.img_backbone.layer3.4.bn3.running_mean, depth_plugin_net.img_backbone.layer3.4.bn3.running_var, depth_plugin_net.img_backbone.layer3.4.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer3.5.conv1.weight, depth_plugin_net.img_backbone.layer3.5.bn1.weight, depth_plugin_net.img_backbone.layer3.5.bn1.bias, depth_plugin_net.img_backbone.layer3.5.bn1.running_mean, depth_plugin_net.img_backbone.layer3.5.bn1.running_var, depth_plugin_net.img_backbone.layer3.5.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer3.5.conv2.weight, depth_plugin_net.img_backbone.layer3.5.bn2.weight, depth_plugin_net.img_backbone.layer3.5.bn2.bias, depth_plugin_net.img_backbone.layer3.5.bn2.running_mean, depth_plugin_net.img_backbone.layer3.5.bn2.running_var, depth_plugin_net.img_backbone.layer3.5.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer3.5.conv3.weight, depth_plugin_net.img_backbone.layer3.5.bn3.weight, depth_plugin_net.img_backbone.layer3.5.bn3.bias, depth_plugin_net.img_backbone.layer3.5.bn3.running_mean, depth_plugin_net.img_backbone.layer3.5.bn3.running_var, depth_plugin_net.img_backbone.layer3.5.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer4.0.conv1.weight, depth_plugin_net.img_backbone.layer4.0.bn1.weight, depth_plugin_net.img_backbone.layer4.0.bn1.bias, depth_plugin_net.img_backbone.layer4.0.bn1.running_mean, depth_plugin_net.img_backbone.layer4.0.bn1.running_var, depth_plugin_net.img_backbone.layer4.0.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer4.0.conv2.weight, depth_plugin_net.img_backbone.layer4.0.bn2.weight, depth_plugin_net.img_backbone.layer4.0.bn2.bias, depth_plugin_net.img_backbone.layer4.0.bn2.running_mean, depth_plugin_net.img_backbone.layer4.0.bn2.running_var, depth_plugin_net.img_backbone.layer4.0.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer4.0.conv3.weight, depth_plugin_net.img_backbone.layer4.0.bn3.weight, depth_plugin_net.img_backbone.layer4.0.bn3.bias, depth_plugin_net.img_backbone.layer4.0.bn3.running_mean, depth_plugin_net.img_backbone.layer4.0.bn3.running_var, depth_plugin_net.img_backbone.layer4.0.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer4.0.downsample.0.weight, depth_plugin_net.img_backbone.layer4.0.downsample.1.weight, depth_plugin_net.img_backbone.layer4.0.downsample.1.bias, depth_plugin_net.img_backbone.layer4.0.downsample.1.running_mean, depth_plugin_net.img_backbone.layer4.0.downsample.1.running_var, depth_plugin_net.img_backbone.layer4.0.downsample.1.num_batches_tracked, depth_plugin_net.img_backbone.layer4.1.conv1.weight, depth_plugin_net.img_backbone.layer4.1.bn1.weight, depth_plugin_net.img_backbone.layer4.1.bn1.bias, depth_plugin_net.img_backbone.layer4.1.bn1.running_mean, depth_plugin_net.img_backbone.layer4.1.bn1.running_var, depth_plugin_net.img_backbone.layer4.1.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer4.1.conv2.weight, depth_plugin_net.img_backbone.layer4.1.bn2.weight, depth_plugin_net.img_backbone.layer4.1.bn2.bias, depth_plugin_net.img_backbone.layer4.1.bn2.running_mean, depth_plugin_net.img_backbone.layer4.1.bn2.running_var, depth_plugin_net.img_backbone.layer4.1.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer4.1.conv3.weight, depth_plugin_net.img_backbone.layer4.1.bn3.weight, depth_plugin_net.img_backbone.layer4.1.bn3.bias, depth_plugin_net.img_backbone.layer4.1.bn3.running_mean, depth_plugin_net.img_backbone.layer4.1.bn3.running_var, depth_plugin_net.img_backbone.layer4.1.bn3.num_batches_tracked, depth_plugin_net.img_backbone.layer4.2.conv1.weight, depth_plugin_net.img_backbone.layer4.2.bn1.weight, depth_plugin_net.img_backbone.layer4.2.bn1.bias, depth_plugin_net.img_backbone.layer4.2.bn1.running_mean, depth_plugin_net.img_backbone.layer4.2.bn1.running_var, depth_plugin_net.img_backbone.layer4.2.bn1.num_batches_tracked, depth_plugin_net.img_backbone.layer4.2.conv2.weight, depth_plugin_net.img_backbone.layer4.2.bn2.weight, depth_plugin_net.img_backbone.layer4.2.bn2.bias, depth_plugin_net.img_backbone.layer4.2.bn2.running_mean, depth_plugin_net.img_backbone.layer4.2.bn2.running_var, depth_plugin_net.img_backbone.layer4.2.bn2.num_batches_tracked, depth_plugin_net.img_backbone.layer4.2.conv3.weight, depth_plugin_net.img_backbone.layer4.2.bn3.weight, depth_plugin_net.img_backbone.layer4.2.bn3.bias, depth_plugin_net.img_backbone.layer4.2.bn3.running_mean, depth_plugin_net.img_backbone.layer4.2.bn3.running_var, depth_plugin_net.img_backbone.layer4.2.bn3.num_batches_tracked, depth_plugin_net.img_neck.lateral_convs.0.conv.weight, depth_plugin_net.img_neck.lateral_convs.0.conv.bias, depth_plugin_net.img_neck.lateral_convs.1.conv.weight, depth_plugin_net.img_neck.lateral_convs.1.conv.bias, depth_plugin_net.img_neck.fpn_convs.0.conv.weight, depth_plugin_net.img_neck.fpn_convs.0.conv.bias, depth_plugin_net.depth_net.reduce_conv.0.weight, depth_plugin_net.depth_net.reduce_conv.0.bias, depth_plugin_net.depth_net.reduce_conv.1.weight, depth_plugin_net.depth_net.reduce_conv.1.bias, depth_plugin_net.depth_net.reduce_conv.1.running_mean, depth_plugin_net.depth_net.reduce_conv.1.running_var, depth_plugin_net.depth_net.reduce_conv.1.num_batches_tracked, depth_plugin_net.depth_net.context_conv.weight, depth_plugin_net.depth_net.context_conv.bias, depth_plugin_net.depth_net.bn.weight, depth_plugin_net.depth_net.bn.bias, depth_plugin_net.depth_net.bn.running_mean, depth_plugin_net.depth_net.bn.running_var, depth_plugin_net.depth_net.bn.num_batches_tracked, depth_plugin_net.depth_net.depth_mlp.fc1.weight, depth_plugin_net.depth_net.depth_mlp.fc1.bias, depth_plugin_net.depth_net.depth_mlp.fc2.weight, depth_plugin_net.depth_net.depth_mlp.fc2.bias, depth_plugin_net.depth_net.depth_se.conv_reduce.weight, depth_plugin_net.depth_net.depth_se.conv_reduce.bias, depth_plugin_net.depth_net.depth_se.conv_expand.weight, depth_plugin_net.depth_net.depth_se.conv_expand.bias, depth_plugin_net.depth_net.context_mlp.fc1.weight, depth_plugin_net.depth_net.context_mlp.fc1.bias, depth_plugin_net.depth_net.context_mlp.fc2.weight, depth_plugin_net.depth_net.context_mlp.fc2.bias, depth_plugin_net.depth_net.context_se.conv_reduce.weight, depth_plugin_net.depth_net.context_se.conv_reduce.bias, depth_plugin_net.depth_net.context_se.conv_expand.weight, depth_plugin_net.depth_net.context_se.conv_expand.bias, depth_plugin_net.depth_net.depth_conv.0.conv1.weight, depth_plugin_net.depth_net.depth_conv.0.bn1.weight, depth_plugin_net.depth_net.depth_conv.0.bn1.bias, depth_plugin_net.depth_net.depth_conv.0.bn1.running_mean, depth_plugin_net.depth_net.depth_conv.0.bn1.running_var, depth_plugin_net.depth_net.depth_conv.0.bn1.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.0.conv2.weight, depth_plugin_net.depth_net.depth_conv.0.bn2.weight, depth_plugin_net.depth_net.depth_conv.0.bn2.bias, depth_plugin_net.depth_net.depth_conv.0.bn2.running_mean, depth_plugin_net.depth_net.depth_conv.0.bn2.running_var, depth_plugin_net.depth_net.depth_conv.0.bn2.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.1.conv1.weight, depth_plugin_net.depth_net.depth_conv.1.bn1.weight, depth_plugin_net.depth_net.depth_conv.1.bn1.bias, depth_plugin_net.depth_net.depth_conv.1.bn1.running_mean, depth_plugin_net.depth_net.depth_conv.1.bn1.running_var, depth_plugin_net.depth_net.depth_conv.1.bn1.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.1.conv2.weight, depth_plugin_net.depth_net.depth_conv.1.bn2.weight, depth_plugin_net.depth_net.depth_conv.1.bn2.bias, depth_plugin_net.depth_net.depth_conv.1.bn2.running_mean, depth_plugin_net.depth_net.depth_conv.1.bn2.running_var, depth_plugin_net.depth_net.depth_conv.1.bn2.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.2.conv1.weight, depth_plugin_net.depth_net.depth_conv.2.bn1.weight, depth_plugin_net.depth_net.depth_conv.2.bn1.bias, depth_plugin_net.depth_net.depth_conv.2.bn1.running_mean, depth_plugin_net.depth_net.depth_conv.2.bn1.running_var, depth_plugin_net.depth_net.depth_conv.2.bn1.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.2.conv2.weight, depth_plugin_net.depth_net.depth_conv.2.bn2.weight, depth_plugin_net.depth_net.depth_conv.2.bn2.bias, depth_plugin_net.depth_net.depth_conv.2.bn2.running_mean, depth_plugin_net.depth_net.depth_conv.2.bn2.running_var, depth_plugin_net.depth_net.depth_conv.2.bn2.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.3.aspp1.atrous_conv.weight, depth_plugin_net.depth_net.depth_conv.3.aspp1.bn.weight, depth_plugin_net.depth_net.depth_conv.3.aspp1.bn.bias, depth_plugin_net.depth_net.depth_conv.3.aspp1.bn.running_mean, depth_plugin_net.depth_net.depth_conv.3.aspp1.bn.running_var, depth_plugin_net.depth_net.depth_conv.3.aspp1.bn.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.3.aspp2.atrous_conv.weight, depth_plugin_net.depth_net.depth_conv.3.aspp2.bn.weight, depth_plugin_net.depth_net.depth_conv.3.aspp2.bn.bias, depth_plugin_net.depth_net.depth_conv.3.aspp2.bn.running_mean, depth_plugin_net.depth_net.depth_conv.3.aspp2.bn.running_var, depth_plugin_net.depth_net.depth_conv.3.aspp2.bn.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.3.aspp3.atrous_conv.weight, depth_plugin_net.depth_net.depth_conv.3.aspp3.bn.weight, depth_plugin_net.depth_net.depth_conv.3.aspp3.bn.bias, depth_plugin_net.depth_net.depth_conv.3.aspp3.bn.running_mean, depth_plugin_net.depth_net.depth_conv.3.aspp3.bn.running_var, depth_plugin_net.depth_net.depth_conv.3.aspp3.bn.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.3.aspp4.atrous_conv.weight, depth_plugin_net.depth_net.depth_conv.3.aspp4.bn.weight, depth_plugin_net.depth_net.depth_conv.3.aspp4.bn.bias, depth_plugin_net.depth_net.depth_conv.3.aspp4.bn.running_mean, depth_plugin_net.depth_net.depth_conv.3.aspp4.bn.running_var, depth_plugin_net.depth_net.depth_conv.3.aspp4.bn.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.3.global_avg_pool.1.weight, depth_plugin_net.depth_net.depth_conv.3.global_avg_pool.2.weight, depth_plugin_net.depth_net.depth_conv.3.global_avg_pool.2.bias, depth_plugin_net.depth_net.depth_conv.3.global_avg_pool.2.running_mean, depth_plugin_net.depth_net.depth_conv.3.global_avg_pool.2.running_var, depth_plugin_net.depth_net.depth_conv.3.global_avg_pool.2.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.3.conv1.weight, depth_plugin_net.depth_net.depth_conv.3.bn1.weight, depth_plugin_net.depth_net.depth_conv.3.bn1.bias, depth_plugin_net.depth_net.depth_conv.3.bn1.running_mean, depth_plugin_net.depth_net.depth_conv.3.bn1.running_var, depth_plugin_net.depth_net.depth_conv.3.bn1.num_batches_tracked, depth_plugin_net.depth_net.depth_conv.4.weight, depth_plugin_net.depth_net.depth_conv.4.bias, depth_plugin_net.depth_plugin_net.img_backbone.conv1.weight
+
+missing keys in source state_dict: forward_projection.dx, forward_projection.bx, forward_projection.nx, img_bev_encoder_backbone.layers.0.0.conv1.weight, img_bev_encoder_backbone.layers.0.0.bn1.weight, img_bev_encoder_backbone.layers.0.0.bn1.bias, img_bev_encoder_backbone.layers.0.0.bn1.running_mean, img_bev_encoder_backbone.layers.0.0.bn1.running_var, img_bev_encoder_backbone.layers.0.0.conv2.weight, img_bev_encoder_backbone.layers.0.0.bn2.weight, img_bev_encoder_backbone.layers.0.0.bn2.bias, img_bev_encoder_backbone.layers.0.0.bn2.running_mean, img_bev_encoder_backbone.layers.0.0.bn2.running_var, img_bev_encoder_backbone.layers.0.0.downsample.weight, img_bev_encoder_backbone.layers.0.0.downsample.bias, img_bev_encoder_backbone.layers.0.1.conv1.weight, img_bev_encoder_backbone.layers.0.1.bn1.weight, img_bev_encoder_backbone.layers.0.1.bn1.bias, img_bev_encoder_backbone.layers.0.1.bn1.running_mean, img_bev_encoder_backbone.layers.0.1.bn1.running_var, img_bev_encoder_backbone.layers.0.1.conv2.weight, img_bev_encoder_backbone.layers.0.1.bn2.weight, img_bev_encoder_backbone.layers.0.1.bn2.bias, img_bev_encoder_backbone.layers.0.1.bn2.running_mean, img_bev_encoder_backbone.layers.0.1.bn2.running_var, img_bev_encoder_backbone.layers.1.0.conv1.weight, img_bev_encoder_backbone.layers.1.0.bn1.weight, img_bev_encoder_backbone.layers.1.0.bn1.bias, img_bev_encoder_backbone.layers.1.0.bn1.running_mean, img_bev_encoder_backbone.layers.1.0.bn1.running_var, img_bev_encoder_backbone.layers.1.0.conv2.weight, img_bev_encoder_backbone.layers.1.0.bn2.weight, img_bev_encoder_backbone.layers.1.0.bn2.bias, img_bev_encoder_backbone.layers.1.0.bn2.running_mean, img_bev_encoder_backbone.layers.1.0.bn2.running_var, img_bev_encoder_backbone.layers.1.0.downsample.weight, img_bev_encoder_backbone.layers.1.0.downsample.bias, img_bev_encoder_backbone.layers.1.1.conv1.weight, img_bev_encoder_backbone.layers.1.1.bn1.weight, img_bev_encoder_backbone.layers.1.1.bn1.bias, img_bev_encoder_backbone.layers.1.1.bn1.running_mean, img_bev_encoder_backbone.layers.1.1.bn1.running_var, img_bev_encoder_backbone.layers.1.1.conv2.weight, img_bev_encoder_backbone.layers.1.1.bn2.weight, img_bev_encoder_backbone.layers.1.1.bn2.bias, img_bev_encoder_backbone.layers.1.1.bn2.running_mean, img_bev_encoder_backbone.layers.1.1.bn2.running_var, img_bev_encoder_backbone.layers.2.0.conv1.weight, img_bev_encoder_backbone.layers.2.0.bn1.weight, img_bev_encoder_backbone.layers.2.0.bn1.bias, img_bev_encoder_backbone.layers.2.0.bn1.running_mean, img_bev_encoder_backbone.layers.2.0.bn1.running_var, img_bev_encoder_backbone.layers.2.0.conv2.weight, img_bev_encoder_backbone.layers.2.0.bn2.weight, img_bev_encoder_backbone.layers.2.0.bn2.bias, img_bev_encoder_backbone.layers.2.0.bn2.running_mean, img_bev_encoder_backbone.layers.2.0.bn2.running_var, img_bev_encoder_backbone.layers.2.0.downsample.weight, img_bev_encoder_backbone.layers.2.0.downsample.bias, img_bev_encoder_backbone.layers.2.1.conv1.weight, img_bev_encoder_backbone.layers.2.1.bn1.weight, img_bev_encoder_backbone.layers.2.1.bn1.bias, img_bev_encoder_backbone.layers.2.1.bn1.running_mean, img_bev_encoder_backbone.layers.2.1.bn1.running_var, img_bev_encoder_backbone.layers.2.1.conv2.weight, img_bev_encoder_backbone.layers.2.1.bn2.weight, img_bev_encoder_backbone.layers.2.1.bn2.bias, img_bev_encoder_backbone.layers.2.1.bn2.running_mean, img_bev_encoder_backbone.layers.2.1.bn2.running_var, img_bev_encoder_neck.conv.0.weight, img_bev_encoder_neck.conv.1.weight, img_bev_encoder_neck.conv.1.bias, img_bev_encoder_neck.conv.1.running_mean, img_bev_encoder_neck.conv.1.running_var, img_bev_encoder_neck.conv.3.weight, img_bev_encoder_neck.conv.4.weight, img_bev_encoder_neck.conv.4.bias, img_bev_encoder_neck.conv.4.running_mean, img_bev_encoder_neck.conv.4.running_var, img_bev_encoder_neck.up2.1.weight, img_bev_encoder_neck.up2.2.weight, img_bev_encoder_neck.up2.2.bias, img_bev_encoder_neck.up2.2.running_mean, img_bev_encoder_neck.up2.2.running_var, img_bev_encoder_neck.up2.4.weight, img_bev_encoder_neck.up2.4.bias, backward_projection.positional_encoding.row_embed.weight, backward_projection.positional_encoding.col_embed.weight, backward_projection.transformer.cams_embeds, backward_projection.transformer.encoder.layers.0.attentions.0.sampling_offsets.weight, backward_projection.transformer.encoder.layers.0.attentions.0.sampling_offsets.bias, backward_projection.transformer.encoder.layers.0.attentions.0.attention_weights.weight, backward_projection.transformer.encoder.layers.0.attentions.0.attention_weights.bias, backward_projection.transformer.encoder.layers.0.attentions.0.value_proj.weight, backward_projection.transformer.encoder.layers.0.attentions.0.value_proj.bias, backward_projection.transformer.encoder.layers.0.attentions.0.output_proj.weight, backward_projection.transformer.encoder.layers.0.attentions.0.output_proj.bias, backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.sampling_offsets.weight, backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.sampling_offsets.bias, backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.attention_weights.weight, backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.attention_weights.bias, backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.value_proj.weight, backward_projection.transformer.encoder.layers.0.attentions.1.deformable_attention.value_proj.bias, backward_projection.transformer.encoder.layers.0.attentions.1.output_proj.weight, backward_projection.transformer.encoder.layers.0.attentions.1.output_proj.bias, backward_projection.transformer.encoder.layers.0.ffns.0.layers.0.0.weight, backward_projection.transformer.encoder.layers.0.ffns.0.layers.0.0.bias, backward_projection.transformer.encoder.layers.0.ffns.0.layers.1.weight, backward_projection.transformer.encoder.layers.0.ffns.0.layers.1.bias, backward_projection.transformer.encoder.layers.0.norms.0.weight, backward_projection.transformer.encoder.layers.0.norms.0.bias, backward_projection.transformer.encoder.layers.0.norms.1.weight, backward_projection.transformer.encoder.layers.0.norms.1.bias, backward_projection.transformer.encoder.layers.0.norms.2.weight, backward_projection.transformer.encoder.layers.0.norms.2.bias, backward_projection.bev_embedding.weight, occupancy_head.final_conv.conv.weight, occupancy_head.final_conv.conv.bias, occupancy_head.predicter.0.weight, occupancy_head.predicter.0.bias, occupancy_head.predicter.2.weight, occupancy_head.predicter.2.bias, history_keyframe_time_conv.0.weight, history_keyframe_time_conv.0.bias, history_keyframe_time_conv.1.weight, history_keyframe_time_conv.1.bias, history_keyframe_time_conv.1.running_mean, history_keyframe_time_conv.1.running_var, history_keyframe_cat_conv.0.weight, history_keyframe_cat_conv.0.bias, history_keyframe_cat_conv.1.weight, history_keyframe_cat_conv.1.bias, history_keyframe_cat_conv.1.running_mean, history_keyframe_cat_conv.1.running_var
+
+2024-05-03 00:24:56,289 - mmdet - INFO - Start running, host: lzm@a8, work_dir: /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e
+2024-05-03 00:24:56,289 - mmdet - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(ABOVE_NORMAL) Fp16OptimizerHook                  
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) MEGVIIEMAHook                      
+(NORMAL      ) SequentialControlHook              
+(LOW         ) CustomDistEvalHook                 
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(NORMAL      ) SequentialControlHook              
+(LOW         ) IterTimerHook                      
+(LOW         ) CustomDistEvalHook                 
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(LOW         ) IterTimerHook                      
+(LOW         ) CustomDistEvalHook                 
+ -------------------- 
+after_train_iter:
+(ABOVE_NORMAL) Fp16OptimizerHook                  
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) MEGVIIEMAHook                      
+(NORMAL      ) SequentialControlHook              
+(LOW         ) IterTimerHook                      
+(LOW         ) CustomDistEvalHook                 
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) MEGVIIEMAHook                      
+(LOW         ) CustomDistEvalHook                 
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_epoch:
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_epoch:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_run:
+(NORMAL      ) MEGVIIEMAHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+2024-05-03 00:24:56,289 - mmdet - INFO - workflow: [('train', 1)], max: 8780 iters
+2024-05-03 00:24:56,290 - mmdet - INFO - Checkpoints will be saved to /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e by HardDiskBackend.
+2024-05-03 00:26:36,344 - mmdet - INFO - Iter [50/8780]	lr: 4.915e-05, eta: 4:50:59, time: 2.000, data_time: 1.030, memory: 8317, loss_voxel_ce_c_0: 19.3222, loss_voxel_sem_scal_c_0: 8.9840, loss_voxel_geo_scal_c_0: 4.1721, loss_voxel_lovasz_c_0: 0.9450, loss_depth: 1.8868, loss: 35.3101, grad_norm: nan
+2024-05-03 00:28:17,950 - mmdet - INFO - Iter [100/8780]	lr: 9.910e-05, eta: 4:51:40, time: 2.032, data_time: 1.019, memory: 8317, loss_voxel_ce_c_0: 2.4914, loss_voxel_sem_scal_c_0: 7.7856, loss_voxel_geo_scal_c_0: 1.4568, loss_voxel_lovasz_c_0: 0.8795, loss_depth: 1.9114, loss: 14.5247, grad_norm: nan
+2024-05-03 00:30:02,561 - mmdet - INFO - Iter [150/8780]	lr: 1.491e-04, eta: 4:53:38, time: 2.092, data_time: 1.215, memory: 8318, loss_voxel_ce_c_0: 1.1693, loss_voxel_sem_scal_c_0: 6.2899, loss_voxel_geo_scal_c_0: 1.0829, loss_voxel_lovasz_c_0: 0.8243, loss_depth: 2.1797, loss: 11.5461, grad_norm: 9.3364
+2024-05-03 00:31:50,412 - mmdet - INFO - Iter [200/8780]	lr: 1.990e-04, eta: 4:56:03, time: 2.157, data_time: 1.186, memory: 8318, loss_voxel_ce_c_0: 1.1013, loss_voxel_sem_scal_c_0: 5.3057, loss_voxel_geo_scal_c_0: 0.9427, loss_voxel_lovasz_c_0: 0.7910, loss_depth: 2.2469, loss: 10.3875, grad_norm: 10.6754
+2024-05-03 00:33:40,230 - mmdet - INFO - Iter [250/8780]	lr: 2.000e-04, eta: 4:57:54, time: 2.196, data_time: 1.043, memory: 8318, loss_voxel_ce_c_0: 1.0889, loss_voxel_sem_scal_c_0: 4.8495, loss_voxel_geo_scal_c_0: 0.9503, loss_voxel_lovasz_c_0: 0.7682, loss_depth: 2.2846, loss: 9.9415, grad_norm: 11.2749
+2024-05-03 00:35:27,535 - mmdet - INFO - Iter [300/8780]	lr: 2.000e-04, eta: 4:57:21, time: 2.146, data_time: 1.181, memory: 8318, loss_voxel_ce_c_0: 1.1392, loss_voxel_sem_scal_c_0: 4.4328, loss_voxel_geo_scal_c_0: 0.9976, loss_voxel_lovasz_c_0: 0.7609, loss_depth: 2.4120, loss: 9.7425, grad_norm: nan
+2024-05-03 00:37:11,462 - mmdet - INFO - Iter [350/8780]	lr: 2.000e-04, eta: 4:55:05, time: 2.079, data_time: 0.952, memory: 8318, loss_voxel_ce_c_0: 1.1155, loss_voxel_sem_scal_c_0: 4.3425, loss_voxel_geo_scal_c_0: 0.9359, loss_voxel_lovasz_c_0: 0.7539, loss_depth: 2.3473, loss: 9.4951, grad_norm: 9.7971
+2024-05-03 00:39:03,866 - mmdet - INFO - Iter [400/8780]	lr: 2.000e-04, eta: 4:55:55, time: 2.248, data_time: 1.255, memory: 8323, loss_voxel_ce_c_0: 1.1293, loss_voxel_sem_scal_c_0: 4.1846, loss_voxel_geo_scal_c_0: 1.0053, loss_voxel_lovasz_c_0: 0.7437, loss_depth: 2.4065, loss: 9.4695, grad_norm: 9.0829
+2024-05-03 00:40:26,438 - mmdet - INFO - Saving checkpoint at 439 iterations
+2024-05-03 00:40:52,012 - mmdet - INFO - Iter [450/8780]	lr: 2.000e-04, eta: 4:54:50, time: 2.163, data_time: 1.120, memory: 8323, loss_voxel_ce_c_0: 1.0577, loss_voxel_sem_scal_c_0: 4.1846, loss_voxel_geo_scal_c_0: 0.8903, loss_voxel_lovasz_c_0: 0.7411, loss_depth: 2.3272, loss: 9.2010, grad_norm: 9.3281
+2024-05-03 00:42:31,558 - mmdet - INFO - Iter [500/8780]	lr: 2.000e-04, eta: 4:51:14, time: 1.991, data_time: 1.076, memory: 8323, loss_voxel_ce_c_0: 1.0227, loss_voxel_sem_scal_c_0: 4.1313, loss_voxel_geo_scal_c_0: 0.9062, loss_voxel_lovasz_c_0: 0.7351, loss_depth: 2.4797, loss: 9.2750, grad_norm: nan
+2024-05-03 00:44:13,334 - mmdet - INFO - Iter [550/8780]	lr: 2.000e-04, eta: 4:48:32, time: 2.036, data_time: 1.162, memory: 8323, loss_voxel_ce_c_0: 1.0794, loss_voxel_sem_scal_c_0: 4.0130, loss_voxel_geo_scal_c_0: 0.9632, loss_voxel_lovasz_c_0: 0.7311, loss_depth: 2.4699, loss: 9.2566, grad_norm: nan
+2024-05-03 00:45:59,131 - mmdet - INFO - Iter [600/8780]	lr: 2.000e-04, eta: 4:46:56, time: 2.116, data_time: 1.219, memory: 8323, loss_voxel_ce_c_0: 1.0589, loss_voxel_sem_scal_c_0: 4.0525, loss_voxel_geo_scal_c_0: 0.9626, loss_voxel_lovasz_c_0: 0.7363, loss_depth: 2.4463, loss: 9.2566, grad_norm: 8.7771
+2024-05-03 00:47:41,179 - mmdet - INFO - Iter [650/8780]	lr: 2.000e-04, eta: 4:44:30, time: 2.041, data_time: 1.044, memory: 8323, loss_voxel_ce_c_0: 1.0236, loss_voxel_sem_scal_c_0: 3.6666, loss_voxel_geo_scal_c_0: 0.8928, loss_voxel_lovasz_c_0: 0.7175, loss_depth: 2.4220, loss: 8.7225, grad_norm: 8.4956
+2024-05-03 00:49:22,036 - mmdet - INFO - Iter [700/8780]	lr: 2.000e-04, eta: 4:41:58, time: 2.017, data_time: 1.094, memory: 8323, loss_voxel_ce_c_0: 1.0099, loss_voxel_sem_scal_c_0: 3.6907, loss_voxel_geo_scal_c_0: 0.8892, loss_voxel_lovasz_c_0: 0.7190, loss_depth: 2.4336, loss: 8.7424, grad_norm: 9.1428
+2024-05-03 00:51:11,140 - mmdet - INFO - Iter [750/8780]	lr: 2.000e-04, eta: 4:41:00, time: 2.182, data_time: 1.171, memory: 8326, loss_voxel_ce_c_0: 1.0468, loss_voxel_sem_scal_c_0: 3.7811, loss_voxel_geo_scal_c_0: 0.8968, loss_voxel_lovasz_c_0: 0.7089, loss_depth: 2.5012, loss: 8.9348, grad_norm: 8.2770
+2024-05-03 00:52:58,247 - mmdet - INFO - Iter [800/8780]	lr: 2.000e-04, eta: 4:39:37, time: 2.142, data_time: 1.253, memory: 8326, loss_voxel_ce_c_0: 0.9768, loss_voxel_sem_scal_c_0: 3.7206, loss_voxel_geo_scal_c_0: 0.8826, loss_voxel_lovasz_c_0: 0.7127, loss_depth: 2.4524, loss: 8.7452, grad_norm: 8.3169
+2024-05-03 00:54:42,903 - mmdet - INFO - Iter [850/8780]	lr: 2.000e-04, eta: 4:37:47, time: 2.093, data_time: 1.148, memory: 8326, loss_voxel_ce_c_0: 0.9882, loss_voxel_sem_scal_c_0: 3.8301, loss_voxel_geo_scal_c_0: 0.8778, loss_voxel_lovasz_c_0: 0.7236, loss_depth: 2.4858, loss: 8.9055, grad_norm: 8.4088
+2024-05-03 00:55:42,588 - mmdet - INFO - Saving checkpoint at 878 iterations
+2024-05-03 00:55:46,135 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_878_ema.pth
+2024-05-03 00:56:22,730 - mmdet - INFO - Iter [900/8780]	lr: 2.000e-04, eta: 4:35:16, time: 1.997, data_time: 1.114, memory: 8355, loss_voxel_ce_c_0: 0.9865, loss_voxel_sem_scal_c_0: 3.3042, loss_voxel_geo_scal_c_0: 0.8344, loss_voxel_lovasz_c_0: 0.6978, loss_depth: 2.3768, loss: 8.1997, grad_norm: 7.7089
+2024-05-03 00:57:36,234 - mmdet - INFO - Iter [950/8780]	lr: 2.000e-04, eta: 4:29:13, time: 1.470, data_time: 0.732, memory: 8357, loss_voxel_ce_c_0: 0.9668, loss_voxel_sem_scal_c_0: 3.5067, loss_voxel_geo_scal_c_0: 0.8208, loss_voxel_lovasz_c_0: 0.7024, loss_depth: 2.4256, loss: 8.4224, grad_norm: 7.7091
+2024-05-03 00:58:49,391 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 00:58:49,392 - mmdet - INFO - Iter [1000/8780]	lr: 2.000e-04, eta: 4:23:37, time: 1.463, data_time: 0.724, memory: 8371, loss_voxel_ce_c_0: 0.9488, loss_voxel_sem_scal_c_0: 3.3652, loss_voxel_geo_scal_c_0: 0.8260, loss_voxel_lovasz_c_0: 0.7026, loss_depth: 2.4339, loss: 8.2765, grad_norm: 6.8768
+2024-05-03 01:00:04,531 - mmdet - INFO - Iter [1050/8780]	lr: 2.000e-04, eta: 4:18:40, time: 1.503, data_time: 0.727, memory: 8371, loss_voxel_ce_c_0: 0.9807, loss_voxel_sem_scal_c_0: 3.2976, loss_voxel_geo_scal_c_0: 0.8447, loss_voxel_lovasz_c_0: 0.7016, loss_depth: 2.3758, loss: 8.2004, grad_norm: 7.7143
+2024-05-03 01:01:20,320 - mmdet - INFO - Iter [1100/8780]	lr: 2.000e-04, eta: 4:14:08, time: 1.516, data_time: 0.710, memory: 8374, loss_voxel_ce_c_0: 0.9533, loss_voxel_sem_scal_c_0: 3.3502, loss_voxel_geo_scal_c_0: 0.8063, loss_voxel_lovasz_c_0: 0.7055, loss_depth: 2.3631, loss: 8.1784, grad_norm: 6.5675
+2024-05-03 01:02:33,412 - mmdet - INFO - Iter [1150/8780]	lr: 2.000e-04, eta: 4:09:35, time: 1.462, data_time: 0.725, memory: 8374, loss_voxel_ce_c_0: 0.9817, loss_voxel_sem_scal_c_0: 3.2935, loss_voxel_geo_scal_c_0: 0.8616, loss_voxel_lovasz_c_0: 0.6949, loss_depth: 2.3842, loss: 8.2159, grad_norm: 6.7361
+2024-05-03 01:03:45,920 - mmdet - INFO - Iter [1200/8780]	lr: 2.000e-04, eta: 4:05:15, time: 1.450, data_time: 0.719, memory: 8380, loss_voxel_ce_c_0: 0.9424, loss_voxel_sem_scal_c_0: 3.4004, loss_voxel_geo_scal_c_0: 0.7670, loss_voxel_lovasz_c_0: 0.6921, loss_depth: 2.3583, loss: 8.1604, grad_norm: 6.8346
+2024-05-03 01:05:01,317 - mmdet - INFO - Iter [1250/8780]	lr: 2.000e-04, eta: 4:01:27, time: 1.508, data_time: 0.730, memory: 8380, loss_voxel_ce_c_0: 0.9263, loss_voxel_sem_scal_c_0: 3.0402, loss_voxel_geo_scal_c_0: 0.7636, loss_voxel_lovasz_c_0: 0.6853, loss_depth: 2.3669, loss: 7.7822, grad_norm: 6.1287
+2024-05-03 01:06:14,173 - mmdet - INFO - Iter [1300/8780]	lr: 2.000e-04, eta: 3:57:37, time: 1.457, data_time: 0.705, memory: 8380, loss_voxel_ce_c_0: 0.9346, loss_voxel_sem_scal_c_0: 3.3836, loss_voxel_geo_scal_c_0: 0.8402, loss_voxel_lovasz_c_0: 0.6999, loss_depth: 2.4773, loss: 8.3356, grad_norm: 6.8305
+2024-05-03 01:06:39,160 - mmdet - INFO - Saving checkpoint at 1317 iterations
+2024-05-03 01:07:28,148 - mmdet - INFO - Iter [1350/8780]	lr: 2.000e-04, eta: 3:54:04, time: 1.479, data_time: 0.730, memory: 8380, loss_voxel_ce_c_0: 0.9559, loss_voxel_sem_scal_c_0: 2.9995, loss_voxel_geo_scal_c_0: 0.8410, loss_voxel_lovasz_c_0: 0.6813, loss_depth: 2.4322, loss: 7.9099, grad_norm: 5.9788
+2024-05-03 01:08:40,613 - mmdet - INFO - Iter [1400/8780]	lr: 2.000e-04, eta: 3:50:33, time: 1.449, data_time: 0.726, memory: 8380, loss_voxel_ce_c_0: 0.9001, loss_voxel_sem_scal_c_0: 3.1587, loss_voxel_geo_scal_c_0: 0.8102, loss_voxel_lovasz_c_0: 0.6777, loss_depth: 2.3906, loss: 7.9373, grad_norm: 6.3824
+2024-05-03 01:09:52,992 - mmdet - INFO - Iter [1450/8780]	lr: 2.000e-04, eta: 3:47:12, time: 1.448, data_time: 0.712, memory: 8380, loss_voxel_ce_c_0: 0.9565, loss_voxel_sem_scal_c_0: 3.3831, loss_voxel_geo_scal_c_0: 0.7953, loss_voxel_lovasz_c_0: 0.6985, loss_depth: 2.4579, loss: 8.2912, grad_norm: 6.6732
+2024-05-03 01:11:06,186 - mmdet - INFO - Iter [1500/8780]	lr: 2.000e-04, eta: 3:44:02, time: 1.464, data_time: 0.713, memory: 8380, loss_voxel_ce_c_0: 0.9905, loss_voxel_sem_scal_c_0: 3.2301, loss_voxel_geo_scal_c_0: 0.8709, loss_voxel_lovasz_c_0: 0.6930, loss_depth: 2.4099, loss: 8.1944, grad_norm: 6.1102
+2024-05-03 01:12:19,391 - mmdet - INFO - Iter [1550/8780]	lr: 2.000e-04, eta: 3:41:01, time: 1.464, data_time: 0.709, memory: 8380, loss_voxel_ce_c_0: 0.9460, loss_voxel_sem_scal_c_0: 3.3803, loss_voxel_geo_scal_c_0: 0.8289, loss_voxel_lovasz_c_0: 0.6935, loss_depth: 2.4031, loss: 8.2518, grad_norm: 6.2894
+2024-05-03 01:13:35,503 - mmdet - INFO - Iter [1600/8780]	lr: 2.000e-04, eta: 3:38:19, time: 1.522, data_time: 0.720, memory: 8380, loss_voxel_ce_c_0: 0.9332, loss_voxel_sem_scal_c_0: 3.0895, loss_voxel_geo_scal_c_0: 0.8530, loss_voxel_lovasz_c_0: 0.6892, loss_depth: 2.4132, loss: 7.9780, grad_norm: 5.9605
+2024-05-03 01:14:48,196 - mmdet - INFO - Iter [1650/8780]	lr: 2.000e-04, eta: 3:35:28, time: 1.454, data_time: 0.712, memory: 8380, loss_voxel_ce_c_0: 0.9207, loss_voxel_sem_scal_c_0: 3.0506, loss_voxel_geo_scal_c_0: 0.8410, loss_voxel_lovasz_c_0: 0.6893, loss_depth: 2.4893, loss: 7.9909, grad_norm: 6.5745
+2024-05-03 01:16:01,544 - mmdet - INFO - Iter [1700/8780]	lr: 2.000e-04, eta: 3:32:45, time: 1.467, data_time: 0.717, memory: 8380, loss_voxel_ce_c_0: 0.9109, loss_voxel_sem_scal_c_0: 3.2427, loss_voxel_geo_scal_c_0: 0.8280, loss_voxel_lovasz_c_0: 0.6862, loss_depth: 2.3686, loss: 8.0364, grad_norm: 6.1898
+2024-05-03 01:17:16,590 - mmdet - INFO - Iter [1750/8780]	lr: 2.000e-04, eta: 3:30:14, time: 1.501, data_time: 0.707, memory: 8380, loss_voxel_ce_c_0: 0.8891, loss_voxel_sem_scal_c_0: 3.0934, loss_voxel_geo_scal_c_0: 0.7856, loss_voxel_lovasz_c_0: 0.6848, loss_depth: 2.4578, loss: 7.9108, grad_norm: 6.1522
+2024-05-03 01:17:25,108 - mmdet - INFO - Saving checkpoint at 1756 iterations
+2024-05-03 01:17:28,233 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_1756_ema.pth
+2024-05-03 01:18:30,767 - mmdet - INFO - Iter [1800/8780]	lr: 2.000e-04, eta: 3:27:44, time: 1.484, data_time: 0.724, memory: 8380, loss_voxel_ce_c_0: 0.8823, loss_voxel_sem_scal_c_0: 3.0701, loss_voxel_geo_scal_c_0: 0.7439, loss_voxel_lovasz_c_0: 0.6821, loss_depth: 2.3972, loss: 7.7755, grad_norm: 5.8128
+2024-05-03 01:19:43,072 - mmdet - INFO - Iter [1850/8780]	lr: 2.000e-04, eta: 3:25:11, time: 1.446, data_time: 0.714, memory: 8380, loss_voxel_ce_c_0: 0.8839, loss_voxel_sem_scal_c_0: 2.7254, loss_voxel_geo_scal_c_0: 0.7304, loss_voxel_lovasz_c_0: 0.6650, loss_depth: 2.4548, loss: 7.4595, grad_norm: 6.4192
+2024-05-03 01:20:57,093 - mmdet - INFO - Iter [1900/8780]	lr: 2.000e-04, eta: 3:22:49, time: 1.480, data_time: 0.711, memory: 8380, loss_voxel_ce_c_0: 0.9224, loss_voxel_sem_scal_c_0: 2.9693, loss_voxel_geo_scal_c_0: 0.7791, loss_voxel_lovasz_c_0: 0.6821, loss_depth: 2.4607, loss: 7.8136, grad_norm: 5.6216
+2024-05-03 01:22:10,418 - mmdet - INFO - Iter [1950/8780]	lr: 2.000e-04, eta: 3:20:28, time: 1.466, data_time: 0.733, memory: 8380, loss_voxel_ce_c_0: 0.8835, loss_voxel_sem_scal_c_0: 2.9741, loss_voxel_geo_scal_c_0: 0.7878, loss_voxel_lovasz_c_0: 0.6830, loss_depth: 2.4556, loss: 7.7840, grad_norm: 5.7166
+2024-05-03 01:23:22,483 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 01:23:22,483 - mmdet - INFO - Iter [2000/8780]	lr: 2.000e-04, eta: 3:18:05, time: 1.441, data_time: 0.726, memory: 8380, loss_voxel_ce_c_0: 0.8855, loss_voxel_sem_scal_c_0: 2.9622, loss_voxel_geo_scal_c_0: 0.7385, loss_voxel_lovasz_c_0: 0.6689, loss_depth: 2.3314, loss: 7.5864, grad_norm: 6.1576
+2024-05-03 01:24:35,662 - mmdet - INFO - Iter [2050/8780]	lr: 2.000e-04, eta: 3:15:50, time: 1.464, data_time: 0.712, memory: 8380, loss_voxel_ce_c_0: 0.9221, loss_voxel_sem_scal_c_0: 2.8953, loss_voxel_geo_scal_c_0: 0.7611, loss_voxel_lovasz_c_0: 0.6641, loss_depth: 2.3827, loss: 7.6254, grad_norm: 5.6258
+2024-05-03 01:25:47,756 - mmdet - INFO - Iter [2100/8780]	lr: 2.000e-04, eta: 3:13:34, time: 1.442, data_time: 0.713, memory: 8380, loss_voxel_ce_c_0: 0.8579, loss_voxel_sem_scal_c_0: 2.9190, loss_voxel_geo_scal_c_0: 0.7176, loss_voxel_lovasz_c_0: 0.6641, loss_depth: 2.4446, loss: 7.6032, grad_norm: 5.7233
+2024-05-03 01:27:00,189 - mmdet - INFO - Iter [2150/8780]	lr: 2.000e-04, eta: 3:11:23, time: 1.449, data_time: 0.711, memory: 8380, loss_voxel_ce_c_0: 0.9087, loss_voxel_sem_scal_c_0: 3.1485, loss_voxel_geo_scal_c_0: 0.7747, loss_voxel_lovasz_c_0: 0.6779, loss_depth: 2.3954, loss: 7.9052, grad_norm: 5.7901
+2024-05-03 01:28:06,475 - mmdet - INFO - Saving checkpoint at 2195 iterations
+2024-05-03 01:28:15,553 - mmdet - INFO - Iter [2200/8780]	lr: 2.000e-04, eta: 3:09:23, time: 1.507, data_time: 0.723, memory: 8382, loss_voxel_ce_c_0: 0.8847, loss_voxel_sem_scal_c_0: 2.9403, loss_voxel_geo_scal_c_0: 0.7526, loss_voxel_lovasz_c_0: 0.6705, loss_depth: 2.4569, loss: 7.7051, grad_norm: 5.8978
+2024-05-03 01:29:28,644 - mmdet - INFO - Iter [2250/8780]	lr: 2.000e-04, eta: 3:07:18, time: 1.462, data_time: 0.714, memory: 8382, loss_voxel_ce_c_0: 0.8366, loss_voxel_sem_scal_c_0: 2.9007, loss_voxel_geo_scal_c_0: 0.7008, loss_voxel_lovasz_c_0: 0.6705, loss_depth: 2.3749, loss: 7.4834, grad_norm: 5.8256
+2024-05-03 01:30:41,421 - mmdet - INFO - Iter [2300/8780]	lr: 2.000e-04, eta: 3:05:14, time: 1.456, data_time: 0.710, memory: 8382, loss_voxel_ce_c_0: 0.8529, loss_voxel_sem_scal_c_0: 3.0737, loss_voxel_geo_scal_c_0: 0.7301, loss_voxel_lovasz_c_0: 0.6798, loss_depth: 2.3528, loss: 7.6893, grad_norm: 6.1217
+2024-05-03 01:31:55,073 - mmdet - INFO - Iter [2350/8780]	lr: 2.000e-04, eta: 3:03:15, time: 1.473, data_time: 0.724, memory: 8382, loss_voxel_ce_c_0: 0.8696, loss_voxel_sem_scal_c_0: 2.8852, loss_voxel_geo_scal_c_0: 0.7457, loss_voxel_lovasz_c_0: 0.6703, loss_depth: 2.4246, loss: 7.5954, grad_norm: 5.5088
+2024-05-03 01:33:08,639 - mmdet - INFO - Iter [2400/8780]	lr: 2.000e-04, eta: 3:01:18, time: 1.471, data_time: 0.711, memory: 8382, loss_voxel_ce_c_0: 0.8959, loss_voxel_sem_scal_c_0: 2.8878, loss_voxel_geo_scal_c_0: 0.7715, loss_voxel_lovasz_c_0: 0.6648, loss_depth: 2.4196, loss: 7.6395, grad_norm: 5.4645
+2024-05-03 01:34:21,915 - mmdet - INFO - Iter [2450/8780]	lr: 2.000e-04, eta: 2:59:22, time: 1.466, data_time: 0.710, memory: 8382, loss_voxel_ce_c_0: 0.8476, loss_voxel_sem_scal_c_0: 2.7772, loss_voxel_geo_scal_c_0: 0.7071, loss_voxel_lovasz_c_0: 0.6586, loss_depth: 2.3572, loss: 7.3478, grad_norm: 5.2658
+2024-05-03 01:35:35,883 - mmdet - INFO - Iter [2500/8780]	lr: 2.000e-04, eta: 2:57:29, time: 1.479, data_time: 0.712, memory: 8382, loss_voxel_ce_c_0: 0.8937, loss_voxel_sem_scal_c_0: 2.9399, loss_voxel_geo_scal_c_0: 0.7502, loss_voxel_lovasz_c_0: 0.6688, loss_depth: 2.4116, loss: 7.6642, grad_norm: 5.8694
+2024-05-03 01:36:49,449 - mmdet - INFO - Iter [2550/8780]	lr: 2.000e-04, eta: 2:55:37, time: 1.471, data_time: 0.714, memory: 8382, loss_voxel_ce_c_0: 0.8469, loss_voxel_sem_scal_c_0: 2.9406, loss_voxel_geo_scal_c_0: 0.7174, loss_voxel_lovasz_c_0: 0.6637, loss_depth: 2.4026, loss: 7.5711, grad_norm: 5.8158
+2024-05-03 01:38:06,335 - mmdet - INFO - Iter [2600/8780]	lr: 2.000e-04, eta: 2:53:54, time: 1.538, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.7984, loss_voxel_sem_scal_c_0: 2.7930, loss_voxel_geo_scal_c_0: 0.6545, loss_voxel_lovasz_c_0: 0.6624, loss_depth: 2.3625, loss: 7.2708, grad_norm: 5.8828
+2024-05-03 01:38:55,604 - mmdet - INFO - Saving checkpoint at 2634 iterations
+2024-05-03 01:38:58,744 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_2634_ema.pth
+2024-05-03 01:39:20,357 - mmdet - INFO - Iter [2650/8780]	lr: 2.000e-04, eta: 2:52:06, time: 1.480, data_time: 0.721, memory: 8382, loss_voxel_ce_c_0: 0.8197, loss_voxel_sem_scal_c_0: 2.7881, loss_voxel_geo_scal_c_0: 0.6485, loss_voxel_lovasz_c_0: 0.6553, loss_depth: 2.3808, loss: 7.2925, grad_norm: 5.7440
+2024-05-03 01:40:34,236 - mmdet - INFO - Iter [2700/8780]	lr: 2.000e-04, eta: 2:50:18, time: 1.478, data_time: 0.719, memory: 8382, loss_voxel_ce_c_0: 0.8198, loss_voxel_sem_scal_c_0: 2.8652, loss_voxel_geo_scal_c_0: 0.6817, loss_voxel_lovasz_c_0: 0.6585, loss_depth: 2.3839, loss: 7.4092, grad_norm: 5.6903
+2024-05-03 01:41:45,755 - mmdet - INFO - Iter [2750/8780]	lr: 2.000e-04, eta: 2:48:27, time: 1.430, data_time: 0.726, memory: 8382, loss_voxel_ce_c_0: 0.8165, loss_voxel_sem_scal_c_0: 2.5750, loss_voxel_geo_scal_c_0: 0.6370, loss_voxel_lovasz_c_0: 0.6422, loss_depth: 2.3199, loss: 6.9905, grad_norm: 5.2699
+2024-05-03 01:42:58,506 - mmdet - INFO - Iter [2800/8780]	lr: 2.000e-04, eta: 2:46:39, time: 1.455, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.8496, loss_voxel_sem_scal_c_0: 2.8324, loss_voxel_geo_scal_c_0: 0.7264, loss_voxel_lovasz_c_0: 0.6586, loss_depth: 2.4280, loss: 7.4950, grad_norm: 5.6709
+2024-05-03 01:44:11,283 - mmdet - INFO - Iter [2850/8780]	lr: 2.000e-04, eta: 2:44:53, time: 1.456, data_time: 0.711, memory: 8382, loss_voxel_ce_c_0: 0.8245, loss_voxel_sem_scal_c_0: 2.7782, loss_voxel_geo_scal_c_0: 0.6742, loss_voxel_lovasz_c_0: 0.6556, loss_depth: 2.4094, loss: 7.3420, grad_norm: 5.2939
+2024-05-03 01:45:25,210 - mmdet - INFO - Iter [2900/8780]	lr: 2.000e-04, eta: 2:43:10, time: 1.479, data_time: 0.721, memory: 8382, loss_voxel_ce_c_0: 0.8685, loss_voxel_sem_scal_c_0: 2.9988, loss_voxel_geo_scal_c_0: 0.7059, loss_voxel_lovasz_c_0: 0.6653, loss_depth: 2.4160, loss: 7.6544, grad_norm: 5.7712
+2024-05-03 01:46:37,940 - mmdet - INFO - Iter [2950/8780]	lr: 2.000e-04, eta: 2:41:26, time: 1.455, data_time: 0.719, memory: 8382, loss_voxel_ce_c_0: 0.8249, loss_voxel_sem_scal_c_0: 2.7299, loss_voxel_geo_scal_c_0: 0.6837, loss_voxel_lovasz_c_0: 0.6527, loss_depth: 2.3386, loss: 7.2298, grad_norm: 5.1990
+2024-05-03 01:47:52,017 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 01:47:52,017 - mmdet - INFO - Iter [3000/8780]	lr: 2.000e-04, eta: 2:39:46, time: 1.482, data_time: 0.731, memory: 8382, loss_voxel_ce_c_0: 0.8391, loss_voxel_sem_scal_c_0: 2.8285, loss_voxel_geo_scal_c_0: 0.6703, loss_voxel_lovasz_c_0: 0.6464, loss_depth: 2.4055, loss: 7.3898, grad_norm: 5.8719
+2024-05-03 01:49:06,556 - mmdet - INFO - Iter [3050/8780]	lr: 2.000e-04, eta: 2:38:07, time: 1.491, data_time: 0.711, memory: 8382, loss_voxel_ce_c_0: 0.7998, loss_voxel_sem_scal_c_0: 2.6269, loss_voxel_geo_scal_c_0: 0.6835, loss_voxel_lovasz_c_0: 0.6441, loss_depth: 2.3207, loss: 7.0750, grad_norm: 5.5039
+2024-05-03 01:49:40,228 - mmdet - INFO - Saving checkpoint at 3073 iterations
+2024-05-03 01:50:21,255 - mmdet - INFO - Iter [3100/8780]	lr: 2.000e-04, eta: 2:36:30, time: 1.494, data_time: 0.712, memory: 8382, loss_voxel_ce_c_0: 0.7745, loss_voxel_sem_scal_c_0: 2.5969, loss_voxel_geo_scal_c_0: 0.6384, loss_voxel_lovasz_c_0: 0.6450, loss_depth: 2.3154, loss: 6.9702, grad_norm: 5.2423
+2024-05-03 01:51:35,485 - mmdet - INFO - Iter [3150/8780]	lr: 2.000e-04, eta: 2:34:52, time: 1.485, data_time: 0.719, memory: 8382, loss_voxel_ce_c_0: 0.8354, loss_voxel_sem_scal_c_0: 2.5795, loss_voxel_geo_scal_c_0: 0.7196, loss_voxel_lovasz_c_0: 0.6587, loss_depth: 2.3912, loss: 7.1845, grad_norm: 5.2435
+2024-05-03 01:52:49,990 - mmdet - INFO - Iter [3200/8780]	lr: 2.000e-04, eta: 2:33:15, time: 1.490, data_time: 0.712, memory: 8382, loss_voxel_ce_c_0: 0.8305, loss_voxel_sem_scal_c_0: 2.5112, loss_voxel_geo_scal_c_0: 0.6582, loss_voxel_lovasz_c_0: 0.6411, loss_depth: 2.3911, loss: 7.0321, grad_norm: 5.3716
+2024-05-03 01:54:03,440 - mmdet - INFO - Iter [3250/8780]	lr: 2.000e-04, eta: 2:31:38, time: 1.469, data_time: 0.716, memory: 8382, loss_voxel_ce_c_0: 0.8091, loss_voxel_sem_scal_c_0: 2.6768, loss_voxel_geo_scal_c_0: 0.6652, loss_voxel_lovasz_c_0: 0.6503, loss_depth: 2.3826, loss: 7.1840, grad_norm: 5.4203
+2024-05-03 01:55:17,350 - mmdet - INFO - Iter [3300/8780]	lr: 2.000e-04, eta: 2:30:02, time: 1.478, data_time: 0.720, memory: 8382, loss_voxel_ce_c_0: 0.8667, loss_voxel_sem_scal_c_0: 2.6644, loss_voxel_geo_scal_c_0: 0.7421, loss_voxel_lovasz_c_0: 0.6555, loss_depth: 2.4660, loss: 7.3946, grad_norm: 5.3470
+2024-05-03 01:56:35,202 - mmdet - INFO - Iter [3350/8780]	lr: 2.000e-04, eta: 2:28:33, time: 1.557, data_time: 0.717, memory: 8382, loss_voxel_ce_c_0: 0.8343, loss_voxel_sem_scal_c_0: 2.8299, loss_voxel_geo_scal_c_0: 0.6697, loss_voxel_lovasz_c_0: 0.6606, loss_depth: 2.3753, loss: 7.3698, grad_norm: 5.2850
+2024-05-03 01:57:47,788 - mmdet - INFO - Iter [3400/8780]	lr: 2.000e-04, eta: 2:26:55, time: 1.452, data_time: 0.709, memory: 8382, loss_voxel_ce_c_0: 0.8664, loss_voxel_sem_scal_c_0: 2.6590, loss_voxel_geo_scal_c_0: 0.7501, loss_voxel_lovasz_c_0: 0.6514, loss_depth: 2.4119, loss: 7.3389, grad_norm: 5.3737
+2024-05-03 01:59:01,747 - mmdet - INFO - Iter [3450/8780]	lr: 2.000e-04, eta: 2:25:21, time: 1.479, data_time: 0.708, memory: 8382, loss_voxel_ce_c_0: 0.8091, loss_voxel_sem_scal_c_0: 2.3713, loss_voxel_geo_scal_c_0: 0.6557, loss_voxel_lovasz_c_0: 0.6394, loss_depth: 2.3609, loss: 6.8364, grad_norm: 5.2078
+2024-05-03 02:00:14,478 - mmdet - INFO - Iter [3500/8780]	lr: 2.000e-04, eta: 2:23:46, time: 1.455, data_time: 0.711, memory: 8382, loss_voxel_ce_c_0: 0.7855, loss_voxel_sem_scal_c_0: 2.6867, loss_voxel_geo_scal_c_0: 0.6626, loss_voxel_lovasz_c_0: 0.6542, loss_depth: 2.3606, loss: 7.1497, grad_norm: 5.3240
+2024-05-03 02:00:31,816 - mmdet - INFO - Saving checkpoint at 3512 iterations
+2024-05-03 02:00:34,940 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_3512_ema.pth
+2024-05-03 02:01:29,044 - mmdet - INFO - Iter [3550/8780]	lr: 2.000e-04, eta: 2:22:14, time: 1.491, data_time: 0.706, memory: 8382, loss_voxel_ce_c_0: 0.7865, loss_voxel_sem_scal_c_0: 2.5637, loss_voxel_geo_scal_c_0: 0.6545, loss_voxel_lovasz_c_0: 0.6411, loss_depth: 2.3866, loss: 7.0324, grad_norm: 5.2940
+2024-05-03 02:02:41,525 - mmdet - INFO - Iter [3600/8780]	lr: 2.000e-04, eta: 2:20:39, time: 1.450, data_time: 0.710, memory: 8382, loss_voxel_ce_c_0: 0.7663, loss_voxel_sem_scal_c_0: 2.5009, loss_voxel_geo_scal_c_0: 0.6056, loss_voxel_lovasz_c_0: 0.6348, loss_depth: 2.3449, loss: 6.8525, grad_norm: 4.8425
+2024-05-03 02:03:55,362 - mmdet - INFO - Iter [3650/8780]	lr: 2.000e-04, eta: 2:19:07, time: 1.476, data_time: 0.722, memory: 8382, loss_voxel_ce_c_0: 0.7885, loss_voxel_sem_scal_c_0: 2.4466, loss_voxel_geo_scal_c_0: 0.6305, loss_voxel_lovasz_c_0: 0.6320, loss_depth: 2.3842, loss: 6.8818, grad_norm: 5.2892
+2024-05-03 02:05:09,399 - mmdet - INFO - Iter [3700/8780]	lr: 2.000e-04, eta: 2:17:35, time: 1.481, data_time: 0.716, memory: 8382, loss_voxel_ce_c_0: 0.8134, loss_voxel_sem_scal_c_0: 2.5823, loss_voxel_geo_scal_c_0: 0.6799, loss_voxel_lovasz_c_0: 0.6389, loss_depth: 2.3968, loss: 7.1113, grad_norm: 5.1087
+2024-05-03 02:06:22,568 - mmdet - INFO - Iter [3750/8780]	lr: 2.000e-04, eta: 2:16:03, time: 1.463, data_time: 0.719, memory: 8382, loss_voxel_ce_c_0: 0.7863, loss_voxel_sem_scal_c_0: 2.5840, loss_voxel_geo_scal_c_0: 0.6210, loss_voxel_lovasz_c_0: 0.6386, loss_depth: 2.3402, loss: 6.9701, grad_norm: 5.5557
+2024-05-03 02:07:35,909 - mmdet - INFO - Iter [3800/8780]	lr: 2.000e-04, eta: 2:14:32, time: 1.467, data_time: 0.715, memory: 8382, loss_voxel_ce_c_0: 0.7637, loss_voxel_sem_scal_c_0: 2.5344, loss_voxel_geo_scal_c_0: 0.6285, loss_voxel_lovasz_c_0: 0.6406, loss_depth: 2.3418, loss: 6.9090, grad_norm: 5.3271
+2024-05-03 02:08:48,587 - mmdet - INFO - Iter [3850/8780]	lr: 2.000e-04, eta: 2:13:00, time: 1.454, data_time: 0.713, memory: 8382, loss_voxel_ce_c_0: 0.7814, loss_voxel_sem_scal_c_0: 2.3393, loss_voxel_geo_scal_c_0: 0.6007, loss_voxel_lovasz_c_0: 0.6269, loss_depth: 2.3306, loss: 6.6789, grad_norm: 4.6483
+2024-05-03 02:10:01,942 - mmdet - INFO - Iter [3900/8780]	lr: 2.000e-04, eta: 2:11:30, time: 1.467, data_time: 0.714, memory: 8382, loss_voxel_ce_c_0: 0.7651, loss_voxel_sem_scal_c_0: 2.5338, loss_voxel_geo_scal_c_0: 0.6217, loss_voxel_lovasz_c_0: 0.6353, loss_depth: 2.3061, loss: 6.8620, grad_norm: 5.0637
+2024-05-03 02:11:16,775 - mmdet - INFO - Iter [3950/8780]	lr: 2.000e-04, eta: 2:10:01, time: 1.497, data_time: 0.725, memory: 8382, loss_voxel_ce_c_0: 0.7946, loss_voxel_sem_scal_c_0: 2.4776, loss_voxel_geo_scal_c_0: 0.6545, loss_voxel_lovasz_c_0: 0.6382, loss_depth: 2.3359, loss: 6.9008, grad_norm: 4.9209
+2024-05-03 02:11:18,194 - mmdet - INFO - Saving checkpoint at 3951 iterations
+2024-05-03 02:12:30,553 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 02:12:30,554 - mmdet - INFO - Iter [4000/8780]	lr: 2.000e-04, eta: 2:08:32, time: 1.476, data_time: 0.726, memory: 8382, loss_voxel_ce_c_0: 0.8020, loss_voxel_sem_scal_c_0: 2.6604, loss_voxel_geo_scal_c_0: 0.6736, loss_voxel_lovasz_c_0: 0.6494, loss_depth: 2.4241, loss: 7.2095, grad_norm: 5.4613
+2024-05-03 02:13:44,726 - mmdet - INFO - Iter [4050/8780]	lr: 2.000e-04, eta: 2:07:04, time: 1.483, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.8132, loss_voxel_sem_scal_c_0: 2.4699, loss_voxel_geo_scal_c_0: 0.6647, loss_voxel_lovasz_c_0: 0.6431, loss_depth: 2.3704, loss: 6.9612, grad_norm: 5.1014
+2024-05-03 02:14:57,998 - mmdet - INFO - Iter [4100/8780]	lr: 2.000e-04, eta: 2:05:35, time: 1.465, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.8400, loss_voxel_sem_scal_c_0: 2.5981, loss_voxel_geo_scal_c_0: 0.7100, loss_voxel_lovasz_c_0: 0.6453, loss_depth: 2.4193, loss: 7.2126, grad_norm: 5.3860
+2024-05-03 02:16:10,737 - mmdet - INFO - Iter [4150/8780]	lr: 2.000e-04, eta: 2:04:06, time: 1.455, data_time: 0.717, memory: 8382, loss_voxel_ce_c_0: 0.7637, loss_voxel_sem_scal_c_0: 2.6767, loss_voxel_geo_scal_c_0: 0.6143, loss_voxel_lovasz_c_0: 0.6427, loss_depth: 2.3793, loss: 7.0768, grad_norm: 5.5528
+2024-05-03 02:17:23,174 - mmdet - INFO - Iter [4200/8780]	lr: 2.000e-04, eta: 2:02:37, time: 1.449, data_time: 0.716, memory: 8382, loss_voxel_ce_c_0: 0.7711, loss_voxel_sem_scal_c_0: 2.5099, loss_voxel_geo_scal_c_0: 0.6749, loss_voxel_lovasz_c_0: 0.6399, loss_depth: 2.3800, loss: 6.9758, grad_norm: 4.9416
+2024-05-03 02:18:35,875 - mmdet - INFO - Iter [4250/8780]	lr: 2.000e-04, eta: 2:01:08, time: 1.454, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.8299, loss_voxel_sem_scal_c_0: 2.7161, loss_voxel_geo_scal_c_0: 0.7275, loss_voxel_lovasz_c_0: 0.6611, loss_depth: 2.4012, loss: 7.3358, grad_norm: 5.4159
+2024-05-03 02:19:48,486 - mmdet - INFO - Iter [4300/8780]	lr: 2.000e-04, eta: 1:59:40, time: 1.452, data_time: 0.709, memory: 8382, loss_voxel_ce_c_0: 0.7824, loss_voxel_sem_scal_c_0: 2.3383, loss_voxel_geo_scal_c_0: 0.6375, loss_voxel_lovasz_c_0: 0.6329, loss_depth: 2.3555, loss: 6.7467, grad_norm: 4.5551
+2024-05-03 02:21:00,963 - mmdet - INFO - Iter [4350/8780]	lr: 2.000e-04, eta: 1:58:12, time: 1.450, data_time: 0.710, memory: 8382, loss_voxel_ce_c_0: 0.7771, loss_voxel_sem_scal_c_0: 2.3989, loss_voxel_geo_scal_c_0: 0.6140, loss_voxel_lovasz_c_0: 0.6236, loss_depth: 2.3199, loss: 6.7335, grad_norm: 4.7742
+2024-05-03 02:22:02,437 - mmdet - INFO - Saving checkpoint at 4390 iterations
+2024-05-03 02:22:05,565 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_4390_ema.pth
+2024-05-03 02:22:18,380 - mmdet - INFO - Iter [4400/8780]	lr: 2.000e-04, eta: 1:56:50, time: 1.548, data_time: 0.720, memory: 8382, loss_voxel_ce_c_0: 0.7798, loss_voxel_sem_scal_c_0: 2.5031, loss_voxel_geo_scal_c_0: 0.6262, loss_voxel_lovasz_c_0: 0.6293, loss_depth: 2.3839, loss: 6.9224, grad_norm: 4.7105
+2024-05-03 02:23:31,139 - mmdet - INFO - Iter [4450/8780]	lr: 2.000e-04, eta: 1:55:22, time: 1.455, data_time: 0.713, memory: 8382, loss_voxel_ce_c_0: 0.7513, loss_voxel_sem_scal_c_0: 2.3166, loss_voxel_geo_scal_c_0: 0.6395, loss_voxel_lovasz_c_0: 0.6334, loss_depth: 2.3367, loss: 6.6774, grad_norm: 5.0388
+2024-05-03 02:24:43,048 - mmdet - INFO - Iter [4500/8780]	lr: 2.000e-04, eta: 1:53:55, time: 1.438, data_time: 0.723, memory: 8382, loss_voxel_ce_c_0: 0.7501, loss_voxel_sem_scal_c_0: 2.3189, loss_voxel_geo_scal_c_0: 0.6155, loss_voxel_lovasz_c_0: 0.6227, loss_depth: 2.3332, loss: 6.6403, grad_norm: 4.9263
+2024-05-03 02:25:55,107 - mmdet - INFO - Iter [4550/8780]	lr: 2.000e-04, eta: 1:52:28, time: 1.441, data_time: 0.716, memory: 8382, loss_voxel_ce_c_0: 0.7577, loss_voxel_sem_scal_c_0: 2.3164, loss_voxel_geo_scal_c_0: 0.6141, loss_voxel_lovasz_c_0: 0.6266, loss_depth: 2.3404, loss: 6.6551, grad_norm: 4.7416
+2024-05-03 02:27:08,839 - mmdet - INFO - Iter [4600/8780]	lr: 2.000e-04, eta: 1:51:02, time: 1.474, data_time: 0.719, memory: 8382, loss_voxel_ce_c_0: 0.7419, loss_voxel_sem_scal_c_0: 2.4105, loss_voxel_geo_scal_c_0: 0.5966, loss_voxel_lovasz_c_0: 0.6325, loss_depth: 2.2710, loss: 6.6525, grad_norm: 5.0345
+2024-05-03 02:28:22,404 - mmdet - INFO - Iter [4650/8780]	lr: 2.000e-04, eta: 1:49:37, time: 1.472, data_time: 0.705, memory: 8382, loss_voxel_ce_c_0: 0.7424, loss_voxel_sem_scal_c_0: 2.3357, loss_voxel_geo_scal_c_0: 0.6002, loss_voxel_lovasz_c_0: 0.6236, loss_depth: 2.3040, loss: 6.6060, grad_norm: 5.0714
+2024-05-03 02:29:36,128 - mmdet - INFO - Iter [4700/8780]	lr: 2.000e-04, eta: 1:48:13, time: 1.474, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.7284, loss_voxel_sem_scal_c_0: 2.4837, loss_voxel_geo_scal_c_0: 0.6092, loss_voxel_lovasz_c_0: 0.6244, loss_depth: 2.3117, loss: 6.7575, grad_norm: 4.9560
+2024-05-03 02:30:48,410 - mmdet - INFO - Iter [4750/8780]	lr: 2.000e-04, eta: 1:46:47, time: 1.446, data_time: 0.711, memory: 8382, loss_voxel_ce_c_0: 0.7955, loss_voxel_sem_scal_c_0: 2.4224, loss_voxel_geo_scal_c_0: 0.6308, loss_voxel_lovasz_c_0: 0.6179, loss_depth: 2.3838, loss: 6.8504, grad_norm: 5.4373
+2024-05-03 02:32:00,941 - mmdet - INFO - Iter [4800/8780]	lr: 2.000e-04, eta: 1:45:22, time: 1.450, data_time: 0.713, memory: 8382, loss_voxel_ce_c_0: 0.7817, loss_voxel_sem_scal_c_0: 2.5074, loss_voxel_geo_scal_c_0: 0.6515, loss_voxel_lovasz_c_0: 0.6334, loss_depth: 2.3605, loss: 6.9344, grad_norm: 4.8156
+2024-05-03 02:32:42,876 - mmdet - INFO - Saving checkpoint at 4829 iterations
+2024-05-03 02:33:14,452 - mmdet - INFO - Iter [4850/8780]	lr: 2.000e-04, eta: 1:43:57, time: 1.470, data_time: 0.717, memory: 8382, loss_voxel_ce_c_0: 0.7658, loss_voxel_sem_scal_c_0: 2.4485, loss_voxel_geo_scal_c_0: 0.6165, loss_voxel_lovasz_c_0: 0.6302, loss_depth: 2.3745, loss: 6.8355, grad_norm: 5.2410
+2024-05-03 02:34:28,932 - mmdet - INFO - Iter [4900/8780]	lr: 2.000e-04, eta: 1:42:34, time: 1.490, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.7528, loss_voxel_sem_scal_c_0: 2.3395, loss_voxel_geo_scal_c_0: 0.6282, loss_voxel_lovasz_c_0: 0.6261, loss_depth: 2.4161, loss: 6.7626, grad_norm: 5.0579
+2024-05-03 02:35:42,251 - mmdet - INFO - Iter [4950/8780]	lr: 2.000e-04, eta: 1:41:10, time: 1.466, data_time: 0.727, memory: 8382, loss_voxel_ce_c_0: 0.7548, loss_voxel_sem_scal_c_0: 2.2963, loss_voxel_geo_scal_c_0: 0.6190, loss_voxel_lovasz_c_0: 0.6149, loss_depth: 2.3155, loss: 6.6006, grad_norm: 4.8894
+2024-05-03 02:36:55,309 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 02:36:55,309 - mmdet - INFO - Iter [5000/8780]	lr: 2.000e-04, eta: 1:39:46, time: 1.461, data_time: 0.710, memory: 8382, loss_voxel_ce_c_0: 0.7850, loss_voxel_sem_scal_c_0: 2.4536, loss_voxel_geo_scal_c_0: 0.6507, loss_voxel_lovasz_c_0: 0.6315, loss_depth: 2.3667, loss: 6.8875, grad_norm: 5.1801
+2024-05-03 02:38:10,640 - mmdet - INFO - Iter [5050/8780]	lr: 2.000e-04, eta: 1:38:24, time: 1.507, data_time: 0.712, memory: 8382, loss_voxel_ce_c_0: 0.7791, loss_voxel_sem_scal_c_0: 2.5376, loss_voxel_geo_scal_c_0: 0.6385, loss_voxel_lovasz_c_0: 0.6386, loss_depth: 2.3756, loss: 6.9694, grad_norm: 5.1126
+2024-05-03 02:39:23,301 - mmdet - INFO - Iter [5100/8780]	lr: 2.000e-04, eta: 1:37:00, time: 1.453, data_time: 0.713, memory: 8382, loss_voxel_ce_c_0: 0.7843, loss_voxel_sem_scal_c_0: 2.3771, loss_voxel_geo_scal_c_0: 0.6241, loss_voxel_lovasz_c_0: 0.6377, loss_depth: 2.3443, loss: 6.7673, grad_norm: 4.7953
+2024-05-03 02:40:37,088 - mmdet - INFO - Iter [5150/8780]	lr: 2.000e-04, eta: 1:35:38, time: 1.476, data_time: 0.705, memory: 8382, loss_voxel_ce_c_0: 0.7745, loss_voxel_sem_scal_c_0: 2.6843, loss_voxel_geo_scal_c_0: 0.6362, loss_voxel_lovasz_c_0: 0.6353, loss_depth: 2.3563, loss: 7.0866, grad_norm: 5.2145
+2024-05-03 02:41:49,462 - mmdet - INFO - Iter [5200/8780]	lr: 2.000e-04, eta: 1:34:14, time: 1.447, data_time: 0.718, memory: 8382, loss_voxel_ce_c_0: 0.7404, loss_voxel_sem_scal_c_0: 2.5438, loss_voxel_geo_scal_c_0: 0.5840, loss_voxel_lovasz_c_0: 0.6318, loss_depth: 2.3697, loss: 6.8696, grad_norm: 4.7688
+2024-05-03 02:43:02,904 - mmdet - INFO - Iter [5250/8780]	lr: 2.000e-04, eta: 1:32:51, time: 1.469, data_time: 0.716, memory: 8382, loss_voxel_ce_c_0: 0.7725, loss_voxel_sem_scal_c_0: 2.3890, loss_voxel_geo_scal_c_0: 0.5987, loss_voxel_lovasz_c_0: 0.6291, loss_depth: 2.3301, loss: 6.7195, grad_norm: nan
+2024-05-03 02:43:28,813 - mmdet - INFO - Saving checkpoint at 5268 iterations
+2024-05-03 02:43:31,980 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_5268_ema.pth
+2024-05-03 02:44:16,600 - mmdet - INFO - Iter [5300/8780]	lr: 2.000e-04, eta: 1:31:29, time: 1.474, data_time: 0.712, memory: 8382, loss_voxel_ce_c_0: 0.7887, loss_voxel_sem_scal_c_0: 2.3299, loss_voxel_geo_scal_c_0: 0.6365, loss_voxel_lovasz_c_0: 0.6260, loss_depth: 2.3518, loss: 6.7330, grad_norm: 5.1206
+2024-05-03 02:45:30,029 - mmdet - INFO - Iter [5350/8780]	lr: 2.000e-04, eta: 1:30:06, time: 1.468, data_time: 0.707, memory: 8382, loss_voxel_ce_c_0: 0.7451, loss_voxel_sem_scal_c_0: 2.3805, loss_voxel_geo_scal_c_0: 0.6117, loss_voxel_lovasz_c_0: 0.6194, loss_depth: 2.3789, loss: 6.7356, grad_norm: 4.9100
+2024-05-03 02:46:42,778 - mmdet - INFO - Iter [5400/8780]	lr: 2.000e-04, eta: 1:28:44, time: 1.455, data_time: 0.706, memory: 8382, loss_voxel_ce_c_0: 0.7427, loss_voxel_sem_scal_c_0: 2.3181, loss_voxel_geo_scal_c_0: 0.5744, loss_voxel_lovasz_c_0: 0.6149, loss_depth: 2.3232, loss: 6.5733, grad_norm: 5.0841
+2024-05-03 02:47:55,627 - mmdet - INFO - Iter [5450/8780]	lr: 2.000e-04, eta: 1:27:22, time: 1.457, data_time: 0.714, memory: 8382, loss_voxel_ce_c_0: 0.7970, loss_voxel_sem_scal_c_0: 2.3799, loss_voxel_geo_scal_c_0: 0.6569, loss_voxel_lovasz_c_0: 0.6339, loss_depth: 2.4315, loss: 6.8993, grad_norm: 5.3234
+2024-05-03 02:49:09,161 - mmdet - INFO - Iter [5500/8780]	lr: 2.000e-04, eta: 1:26:00, time: 1.471, data_time: 0.710, memory: 8382, loss_voxel_ce_c_0: 0.7487, loss_voxel_sem_scal_c_0: 2.4900, loss_voxel_geo_scal_c_0: 0.6117, loss_voxel_lovasz_c_0: 0.6290, loss_depth: 2.3274, loss: 6.8068, grad_norm: 5.3265
+2024-05-03 02:50:22,400 - mmdet - INFO - Iter [5550/8780]	lr: 2.000e-04, eta: 1:24:38, time: 1.465, data_time: 0.724, memory: 8382, loss_voxel_ce_c_0: 0.7085, loss_voxel_sem_scal_c_0: 2.2376, loss_voxel_geo_scal_c_0: 0.5531, loss_voxel_lovasz_c_0: 0.6099, loss_depth: 2.3333, loss: 6.4425, grad_norm: 4.4107
+2024-05-03 02:51:36,506 - mmdet - INFO - Iter [5600/8780]	lr: 2.000e-04, eta: 1:23:17, time: 1.482, data_time: 0.746, memory: 8382, loss_voxel_ce_c_0: 0.7587, loss_voxel_sem_scal_c_0: 2.3532, loss_voxel_geo_scal_c_0: 0.6356, loss_voxel_lovasz_c_0: 0.6195, loss_depth: 2.3512, loss: 6.7183, grad_norm: 4.9617
+2024-05-03 02:52:49,038 - mmdet - INFO - Iter [5650/8780]	lr: 2.000e-04, eta: 1:21:55, time: 1.451, data_time: 0.715, memory: 8382, loss_voxel_ce_c_0: 0.7412, loss_voxel_sem_scal_c_0: 2.3265, loss_voxel_geo_scal_c_0: 0.6097, loss_voxel_lovasz_c_0: 0.6221, loss_depth: 2.2685, loss: 6.5680, grad_norm: 5.2668
+2024-05-03 02:54:02,792 - mmdet - INFO - Iter [5700/8780]	lr: 2.000e-04, eta: 1:20:34, time: 1.475, data_time: 0.723, memory: 8382, loss_voxel_ce_c_0: 0.7007, loss_voxel_sem_scal_c_0: 2.2910, loss_voxel_geo_scal_c_0: 0.5634, loss_voxel_lovasz_c_0: 0.6144, loss_depth: 2.3279, loss: 6.4975, grad_norm: 5.2723
+2024-05-03 02:54:12,985 - mmdet - INFO - Saving checkpoint at 5707 iterations
+2024-05-03 02:55:16,179 - mmdet - INFO - Iter [5750/8780]	lr: 2.000e-04, eta: 1:19:13, time: 1.468, data_time: 0.719, memory: 8382, loss_voxel_ce_c_0: 0.7299, loss_voxel_sem_scal_c_0: 2.1927, loss_voxel_geo_scal_c_0: 0.5921, loss_voxel_lovasz_c_0: 0.6139, loss_depth: 2.2533, loss: 6.3819, grad_norm: 4.4864
+2024-05-03 02:56:28,794 - mmdet - INFO - Iter [5800/8780]	lr: 2.000e-04, eta: 1:17:51, time: 1.452, data_time: 0.726, memory: 8382, loss_voxel_ce_c_0: 0.7516, loss_voxel_sem_scal_c_0: 2.3676, loss_voxel_geo_scal_c_0: 0.6432, loss_voxel_lovasz_c_0: 0.6235, loss_depth: 2.3482, loss: 6.7340, grad_norm: 4.9728
+2024-05-03 02:57:41,448 - mmdet - INFO - Iter [5850/8780]	lr: 2.000e-04, eta: 1:16:30, time: 1.453, data_time: 0.729, memory: 8388, loss_voxel_ce_c_0: 0.7375, loss_voxel_sem_scal_c_0: 2.3545, loss_voxel_geo_scal_c_0: 0.5704, loss_voxel_lovasz_c_0: 0.6198, loss_depth: 2.2815, loss: 6.5637, grad_norm: 4.7565
+2024-05-03 02:58:53,916 - mmdet - INFO - Iter [5900/8780]	lr: 2.000e-04, eta: 1:15:09, time: 1.449, data_time: 0.714, memory: 8388, loss_voxel_ce_c_0: 0.7390, loss_voxel_sem_scal_c_0: 2.2832, loss_voxel_geo_scal_c_0: 0.5791, loss_voxel_lovasz_c_0: 0.6211, loss_depth: 2.2812, loss: 6.5036, grad_norm: 4.8101
+2024-05-03 03:00:10,334 - mmdet - INFO - Iter [5950/8780]	lr: 2.000e-04, eta: 1:13:50, time: 1.529, data_time: 0.718, memory: 8388, loss_voxel_ce_c_0: 0.7047, loss_voxel_sem_scal_c_0: 2.3250, loss_voxel_geo_scal_c_0: 0.5663, loss_voxel_lovasz_c_0: 0.6224, loss_depth: 2.3357, loss: 6.5540, grad_norm: 4.9558
+2024-05-03 03:01:23,563 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 03:01:23,563 - mmdet - INFO - Iter [6000/8780]	lr: 2.000e-04, eta: 1:12:29, time: 1.465, data_time: 0.720, memory: 8388, loss_voxel_ce_c_0: 0.7351, loss_voxel_sem_scal_c_0: 2.2938, loss_voxel_geo_scal_c_0: 0.5871, loss_voxel_lovasz_c_0: 0.6187, loss_depth: 2.3190, loss: 6.5537, grad_norm: 5.0390
+2024-05-03 03:02:37,613 - mmdet - INFO - Iter [6050/8780]	lr: 2.000e-04, eta: 1:11:09, time: 1.481, data_time: 0.719, memory: 8388, loss_voxel_ce_c_0: 0.7165, loss_voxel_sem_scal_c_0: 2.1853, loss_voxel_geo_scal_c_0: 0.5773, loss_voxel_lovasz_c_0: 0.6039, loss_depth: 2.3677, loss: 6.4507, grad_norm: 4.7287
+2024-05-03 03:03:55,186 - mmdet - INFO - Iter [6100/8780]	lr: 2.000e-04, eta: 1:09:50, time: 1.551, data_time: 0.715, memory: 8388, loss_voxel_ce_c_0: 0.7598, loss_voxel_sem_scal_c_0: 2.4016, loss_voxel_geo_scal_c_0: 0.6348, loss_voxel_lovasz_c_0: 0.6224, loss_depth: 2.4432, loss: 6.8619, grad_norm: 4.9016
+2024-05-03 03:05:05,456 - mmdet - INFO - Saving checkpoint at 6146 iterations
+2024-05-03 03:05:08,617 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_6146_ema.pth
+2024-05-03 03:05:12,867 - mmdet - INFO - Iter [6150/8780]	lr: 2.000e-04, eta: 1:08:32, time: 1.554, data_time: 0.711, memory: 8388, loss_voxel_ce_c_0: 0.7582, loss_voxel_sem_scal_c_0: 2.3327, loss_voxel_geo_scal_c_0: 0.6006, loss_voxel_lovasz_c_0: 0.6224, loss_depth: 2.3174, loss: 6.6313, grad_norm: 5.1959
+2024-05-03 03:06:28,839 - mmdet - INFO - Iter [6200/8780]	lr: 2.000e-04, eta: 1:07:13, time: 1.519, data_time: 0.708, memory: 8388, loss_voxel_ce_c_0: 0.7354, loss_voxel_sem_scal_c_0: 2.2406, loss_voxel_geo_scal_c_0: 0.6106, loss_voxel_lovasz_c_0: 0.6150, loss_depth: 2.3967, loss: 6.5982, grad_norm: 5.0225
+2024-05-03 03:07:42,386 - mmdet - INFO - Iter [6250/8780]	lr: 2.000e-04, eta: 1:05:53, time: 1.471, data_time: 0.712, memory: 8388, loss_voxel_ce_c_0: 0.7114, loss_voxel_sem_scal_c_0: 2.1832, loss_voxel_geo_scal_c_0: 0.5731, loss_voxel_lovasz_c_0: 0.6092, loss_depth: 2.2723, loss: 6.3491, grad_norm: 4.7015
+2024-05-03 03:08:56,189 - mmdet - INFO - Iter [6300/8780]	lr: 2.000e-04, eta: 1:04:33, time: 1.476, data_time: 0.715, memory: 8388, loss_voxel_ce_c_0: 0.7186, loss_voxel_sem_scal_c_0: 2.2489, loss_voxel_geo_scal_c_0: 0.5842, loss_voxel_lovasz_c_0: 0.6163, loss_depth: 2.3075, loss: 6.4755, grad_norm: 4.7152
+2024-05-03 03:10:12,070 - mmdet - INFO - Iter [6350/8780]	lr: 2.000e-04, eta: 1:03:14, time: 1.518, data_time: 0.707, memory: 8388, loss_voxel_ce_c_0: 0.7045, loss_voxel_sem_scal_c_0: 2.2599, loss_voxel_geo_scal_c_0: 0.5849, loss_voxel_lovasz_c_0: 0.6104, loss_depth: 2.3100, loss: 6.4697, grad_norm: 4.8381
+2024-05-03 03:11:24,735 - mmdet - INFO - Iter [6400/8780]	lr: 2.000e-04, eta: 1:01:54, time: 1.453, data_time: 0.716, memory: 8388, loss_voxel_ce_c_0: 0.7164, loss_voxel_sem_scal_c_0: 2.1768, loss_voxel_geo_scal_c_0: 0.5862, loss_voxel_lovasz_c_0: 0.6068, loss_depth: 2.2993, loss: 6.3854, grad_norm: 4.7482
+2024-05-03 03:12:37,106 - mmdet - INFO - Iter [6450/8780]	lr: 2.000e-04, eta: 1:00:34, time: 1.448, data_time: 0.719, memory: 8388, loss_voxel_ce_c_0: 0.7072, loss_voxel_sem_scal_c_0: 2.1969, loss_voxel_geo_scal_c_0: 0.5762, loss_voxel_lovasz_c_0: 0.6102, loss_depth: 2.3240, loss: 6.4144, grad_norm: 4.9392
+2024-05-03 03:13:50,343 - mmdet - INFO - Iter [6500/8780]	lr: 2.000e-04, eta: 0:59:14, time: 1.465, data_time: 0.711, memory: 8388, loss_voxel_ce_c_0: 0.7051, loss_voxel_sem_scal_c_0: 2.2334, loss_voxel_geo_scal_c_0: 0.5728, loss_voxel_lovasz_c_0: 0.6087, loss_depth: 2.3153, loss: 6.4354, grad_norm: 4.8239
+2024-05-03 03:15:05,965 - mmdet - INFO - Iter [6550/8780]	lr: 2.000e-04, eta: 0:57:55, time: 1.512, data_time: 0.717, memory: 8388, loss_voxel_ce_c_0: 0.7367, loss_voxel_sem_scal_c_0: 2.1499, loss_voxel_geo_scal_c_0: 0.6071, loss_voxel_lovasz_c_0: 0.5995, loss_depth: 2.3185, loss: 6.4117, grad_norm: 4.5528
+2024-05-03 03:15:57,018 - mmdet - INFO - Saving checkpoint at 6585 iterations
+2024-05-03 03:16:19,983 - mmdet - INFO - Iter [6600/8780]	lr: 2.000e-04, eta: 0:56:36, time: 1.481, data_time: 0.710, memory: 8388, loss_voxel_ce_c_0: 0.7105, loss_voxel_sem_scal_c_0: 2.2178, loss_voxel_geo_scal_c_0: 0.5625, loss_voxel_lovasz_c_0: 0.6168, loss_depth: 2.3282, loss: 6.4358, grad_norm: 4.6120
+2024-05-03 03:17:31,493 - mmdet - INFO - Iter [6650/8780]	lr: 2.000e-04, eta: 0:55:16, time: 1.430, data_time: 0.710, memory: 8388, loss_voxel_ce_c_0: 0.6995, loss_voxel_sem_scal_c_0: 2.1713, loss_voxel_geo_scal_c_0: 0.5265, loss_voxel_lovasz_c_0: 0.5957, loss_depth: 2.2418, loss: 6.2348, grad_norm: 4.1728
+2024-05-03 03:18:47,118 - mmdet - INFO - Iter [6700/8780]	lr: 2.000e-04, eta: 0:53:58, time: 1.513, data_time: 0.716, memory: 8388, loss_voxel_ce_c_0: 0.7390, loss_voxel_sem_scal_c_0: 2.5184, loss_voxel_geo_scal_c_0: 0.5962, loss_voxel_lovasz_c_0: 0.6214, loss_depth: 2.3534, loss: 6.8284, grad_norm: 5.4231
+2024-05-03 03:19:59,417 - mmdet - INFO - Iter [6750/8780]	lr: 2.000e-04, eta: 0:52:38, time: 1.446, data_time: 0.716, memory: 8388, loss_voxel_ce_c_0: 0.6958, loss_voxel_sem_scal_c_0: 2.2578, loss_voxel_geo_scal_c_0: 0.5376, loss_voxel_lovasz_c_0: 0.6129, loss_depth: 2.3092, loss: 6.4133, grad_norm: 4.5639
+2024-05-03 03:21:12,812 - mmdet - INFO - Iter [6800/8780]	lr: 2.000e-04, eta: 0:51:19, time: 1.468, data_time: 0.703, memory: 8388, loss_voxel_ce_c_0: 0.6987, loss_voxel_sem_scal_c_0: 1.9642, loss_voxel_geo_scal_c_0: 0.5287, loss_voxel_lovasz_c_0: 0.5887, loss_depth: 2.2844, loss: 6.0647, grad_norm: 5.0655
+2024-05-03 03:22:25,510 - mmdet - INFO - Iter [6850/8780]	lr: 2.000e-04, eta: 0:50:00, time: 1.454, data_time: 0.706, memory: 8388, loss_voxel_ce_c_0: 0.7310, loss_voxel_sem_scal_c_0: 2.2404, loss_voxel_geo_scal_c_0: 0.5948, loss_voxel_lovasz_c_0: 0.6199, loss_depth: 2.3363, loss: 6.5224, grad_norm: 5.0570
+2024-05-03 03:23:38,330 - mmdet - INFO - Iter [6900/8780]	lr: 2.000e-04, eta: 0:48:41, time: 1.457, data_time: 0.703, memory: 8388, loss_voxel_ce_c_0: 0.7552, loss_voxel_sem_scal_c_0: 2.4902, loss_voxel_geo_scal_c_0: 0.5813, loss_voxel_lovasz_c_0: 0.6286, loss_depth: 2.3675, loss: 6.8229, grad_norm: 5.4457
+2024-05-03 03:24:53,182 - mmdet - INFO - Iter [6950/8780]	lr: 2.000e-04, eta: 0:47:22, time: 1.497, data_time: 0.713, memory: 8388, loss_voxel_ce_c_0: 0.7285, loss_voxel_sem_scal_c_0: 2.1642, loss_voxel_geo_scal_c_0: 0.5875, loss_voxel_lovasz_c_0: 0.6101, loss_depth: 2.3060, loss: 6.3963, grad_norm: 4.5287
+2024-05-03 03:26:07,161 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 03:26:07,161 - mmdet - INFO - Iter [7000/8780]	lr: 2.000e-04, eta: 0:46:04, time: 1.480, data_time: 0.708, memory: 8388, loss_voxel_ce_c_0: 0.7335, loss_voxel_sem_scal_c_0: 2.3122, loss_voxel_geo_scal_c_0: 0.6322, loss_voxel_lovasz_c_0: 0.6137, loss_depth: 2.4062, loss: 6.6978, grad_norm: 5.0597
+2024-05-03 03:26:42,091 - mmdet - INFO - Saving checkpoint at 7024 iterations
+2024-05-03 03:26:45,304 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_7024_ema.pth
+2024-05-03 03:27:21,933 - mmdet - INFO - Iter [7050/8780]	lr: 2.000e-04, eta: 0:44:45, time: 1.495, data_time: 0.713, memory: 8388, loss_voxel_ce_c_0: 0.7447, loss_voxel_sem_scal_c_0: 2.3691, loss_voxel_geo_scal_c_0: 0.6223, loss_voxel_lovasz_c_0: 0.6172, loss_depth: 2.3698, loss: 6.7230, grad_norm: 4.9980
+2024-05-03 03:28:35,147 - mmdet - INFO - Iter [7100/8780]	lr: 2.000e-04, eta: 0:43:27, time: 1.464, data_time: 0.713, memory: 8388, loss_voxel_ce_c_0: 0.7100, loss_voxel_sem_scal_c_0: 2.1262, loss_voxel_geo_scal_c_0: 0.5558, loss_voxel_lovasz_c_0: 0.5991, loss_depth: 2.3264, loss: 6.3176, grad_norm: 4.4906
+2024-05-03 03:29:48,425 - mmdet - INFO - Iter [7150/8780]	lr: 2.000e-04, eta: 0:42:08, time: 1.465, data_time: 0.717, memory: 8388, loss_voxel_ce_c_0: 0.7443, loss_voxel_sem_scal_c_0: 2.1893, loss_voxel_geo_scal_c_0: 0.6296, loss_voxel_lovasz_c_0: 0.6155, loss_depth: 2.3704, loss: 6.5491, grad_norm: 5.1907
+2024-05-03 03:31:01,527 - mmdet - INFO - Iter [7200/8780]	lr: 2.000e-04, eta: 0:40:50, time: 1.462, data_time: 0.713, memory: 8388, loss_voxel_ce_c_0: 0.6762, loss_voxel_sem_scal_c_0: 2.1801, loss_voxel_geo_scal_c_0: 0.5614, loss_voxel_lovasz_c_0: 0.6076, loss_depth: 2.3108, loss: 6.3361, grad_norm: 4.9674
+2024-05-03 03:32:13,343 - mmdet - INFO - Iter [7250/8780]	lr: 2.000e-04, eta: 0:39:31, time: 1.436, data_time: 0.709, memory: 8388, loss_voxel_ce_c_0: 0.7020, loss_voxel_sem_scal_c_0: 2.0087, loss_voxel_geo_scal_c_0: 0.5527, loss_voxel_lovasz_c_0: 0.6013, loss_depth: 2.3219, loss: 6.1866, grad_norm: 3.9648
+2024-05-03 03:33:25,926 - mmdet - INFO - Iter [7300/8780]	lr: 2.000e-04, eta: 0:38:12, time: 1.452, data_time: 0.705, memory: 8388, loss_voxel_ce_c_0: 0.6990, loss_voxel_sem_scal_c_0: 2.0253, loss_voxel_geo_scal_c_0: 0.5498, loss_voxel_lovasz_c_0: 0.5886, loss_depth: 2.2607, loss: 6.1234, grad_norm: 4.2785
+2024-05-03 03:34:38,095 - mmdet - INFO - Iter [7350/8780]	lr: 2.000e-04, eta: 0:36:54, time: 1.443, data_time: 0.709, memory: 8388, loss_voxel_ce_c_0: 0.7074, loss_voxel_sem_scal_c_0: 2.1869, loss_voxel_geo_scal_c_0: 0.5675, loss_voxel_lovasz_c_0: 0.6105, loss_depth: 2.2674, loss: 6.3397, grad_norm: 4.8944
+2024-05-03 03:35:49,886 - mmdet - INFO - Iter [7400/8780]	lr: 2.000e-04, eta: 0:35:35, time: 1.436, data_time: 0.702, memory: 8388, loss_voxel_ce_c_0: 0.7358, loss_voxel_sem_scal_c_0: 2.2882, loss_voxel_geo_scal_c_0: 0.5903, loss_voxel_lovasz_c_0: 0.6126, loss_depth: 2.3370, loss: 6.5638, grad_norm: 4.9293
+2024-05-03 03:37:02,160 - mmdet - INFO - Iter [7450/8780]	lr: 2.000e-04, eta: 0:34:17, time: 1.445, data_time: 0.699, memory: 8388, loss_voxel_ce_c_0: 0.7261, loss_voxel_sem_scal_c_0: 2.1507, loss_voxel_geo_scal_c_0: 0.5851, loss_voxel_lovasz_c_0: 0.6095, loss_depth: 2.3293, loss: 6.4007, grad_norm: 5.1313
+2024-05-03 03:37:21,490 - mmdet - INFO - Saving checkpoint at 7463 iterations
+2024-05-03 03:38:16,709 - mmdet - INFO - Iter [7500/8780]	lr: 2.000e-04, eta: 0:32:59, time: 1.491, data_time: 0.702, memory: 8388, loss_voxel_ce_c_0: 0.6890, loss_voxel_sem_scal_c_0: 2.0607, loss_voxel_geo_scal_c_0: 0.5349, loss_voxel_lovasz_c_0: 0.5887, loss_depth: 2.2344, loss: 6.1077, grad_norm: 4.7683
+2024-05-03 03:39:30,475 - mmdet - INFO - Iter [7550/8780]	lr: 2.000e-04, eta: 0:31:41, time: 1.475, data_time: 0.706, memory: 8388, loss_voxel_ce_c_0: 0.7175, loss_voxel_sem_scal_c_0: 2.2499, loss_voxel_geo_scal_c_0: 0.5948, loss_voxel_lovasz_c_0: 0.6108, loss_depth: 2.3530, loss: 6.5260, grad_norm: nan
+2024-05-03 03:40:43,099 - mmdet - INFO - Iter [7600/8780]	lr: 2.000e-04, eta: 0:30:23, time: 1.452, data_time: 0.710, memory: 8388, loss_voxel_ce_c_0: 0.7325, loss_voxel_sem_scal_c_0: 2.1829, loss_voxel_geo_scal_c_0: 0.5816, loss_voxel_lovasz_c_0: 0.6075, loss_depth: 2.3787, loss: 6.4832, grad_norm: 4.9547
+2024-05-03 03:41:56,799 - mmdet - INFO - Iter [7650/8780]	lr: 2.000e-04, eta: 0:29:06, time: 1.474, data_time: 0.718, memory: 8388, loss_voxel_ce_c_0: 0.7242, loss_voxel_sem_scal_c_0: 2.3581, loss_voxel_geo_scal_c_0: 0.5946, loss_voxel_lovasz_c_0: 0.6174, loss_depth: 2.4304, loss: 6.7246, grad_norm: 4.8465
+2024-05-03 03:43:09,850 - mmdet - INFO - Iter [7700/8780]	lr: 2.000e-04, eta: 0:27:48, time: 1.461, data_time: 0.714, memory: 8388, loss_voxel_ce_c_0: 0.7240, loss_voxel_sem_scal_c_0: 2.2426, loss_voxel_geo_scal_c_0: 0.5504, loss_voxel_lovasz_c_0: 0.6116, loss_depth: 2.2968, loss: 6.4254, grad_norm: 5.2251
+2024-05-03 03:44:25,622 - mmdet - INFO - Iter [7750/8780]	lr: 2.000e-04, eta: 0:26:30, time: 1.515, data_time: 0.704, memory: 8388, loss_voxel_ce_c_0: 0.7004, loss_voxel_sem_scal_c_0: 2.1089, loss_voxel_geo_scal_c_0: 0.6011, loss_voxel_lovasz_c_0: 0.6061, loss_depth: 2.2941, loss: 6.3106, grad_norm: 4.6711
+2024-05-03 03:45:40,641 - mmdet - INFO - Iter [7800/8780]	lr: 2.000e-04, eta: 0:25:13, time: 1.500, data_time: 0.696, memory: 8388, loss_voxel_ce_c_0: 0.6957, loss_voxel_sem_scal_c_0: 2.1440, loss_voxel_geo_scal_c_0: 0.5521, loss_voxel_lovasz_c_0: 0.6055, loss_depth: 2.2670, loss: 6.2642, grad_norm: 4.8740
+2024-05-03 03:46:52,554 - mmdet - INFO - Iter [7850/8780]	lr: 2.000e-04, eta: 0:23:55, time: 1.438, data_time: 0.705, memory: 8388, loss_voxel_ce_c_0: 0.6900, loss_voxel_sem_scal_c_0: 2.1265, loss_voxel_geo_scal_c_0: 0.5153, loss_voxel_lovasz_c_0: 0.5961, loss_depth: 2.2351, loss: 6.1630, grad_norm: 4.9036
+2024-05-03 03:48:04,507 - mmdet - INFO - Iter [7900/8780]	lr: 2.000e-04, eta: 0:22:37, time: 1.439, data_time: 0.715, memory: 8388, loss_voxel_ce_c_0: 0.7025, loss_voxel_sem_scal_c_0: 2.1732, loss_voxel_geo_scal_c_0: 0.5484, loss_voxel_lovasz_c_0: 0.6099, loss_depth: 2.3019, loss: 6.3358, grad_norm: 4.6961
+2024-05-03 03:48:07,324 - mmdet - INFO - Saving checkpoint at 7902 iterations
+2024-05-03 03:48:10,499 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_7902_ema.pth
+2024-05-03 03:49:17,648 - mmdet - INFO - Iter [7950/8780]	lr: 2.000e-04, eta: 0:21:20, time: 1.463, data_time: 0.710, memory: 8388, loss_voxel_ce_c_0: 0.7009, loss_voxel_sem_scal_c_0: 2.1741, loss_voxel_geo_scal_c_0: 0.5578, loss_voxel_lovasz_c_0: 0.6065, loss_depth: 2.3583, loss: 6.3976, grad_norm: 4.5620
+2024-05-03 03:50:29,817 - mmdet - INFO - Exp name: msfbocc-r50-depth-4f-16x4-half-20e.py
+2024-05-03 03:50:29,817 - mmdet - INFO - Iter [8000/8780]	lr: 2.000e-04, eta: 0:20:02, time: 1.443, data_time: 0.696, memory: 8388, loss_voxel_ce_c_0: 0.6969, loss_voxel_sem_scal_c_0: 2.0080, loss_voxel_geo_scal_c_0: 0.5356, loss_voxel_lovasz_c_0: 0.5892, loss_depth: 2.2824, loss: 6.1120, grad_norm: 4.3316
+2024-05-03 03:51:42,316 - mmdet - INFO - Iter [8050/8780]	lr: 2.000e-04, eta: 0:18:45, time: 1.450, data_time: 0.702, memory: 8388, loss_voxel_ce_c_0: 0.6844, loss_voxel_sem_scal_c_0: 2.2845, loss_voxel_geo_scal_c_0: 0.5496, loss_voxel_lovasz_c_0: 0.6042, loss_depth: 2.2462, loss: 6.3689, grad_norm: 4.9381
+2024-05-03 03:52:54,362 - mmdet - INFO - Iter [8100/8780]	lr: 2.000e-04, eta: 0:17:27, time: 1.441, data_time: 0.707, memory: 8388, loss_voxel_ce_c_0: 0.7425, loss_voxel_sem_scal_c_0: 2.1027, loss_voxel_geo_scal_c_0: 0.5916, loss_voxel_lovasz_c_0: 0.6017, loss_depth: 2.3598, loss: 6.3983, grad_norm: 5.1281
+2024-05-03 03:54:07,188 - mmdet - INFO - Iter [8150/8780]	lr: 2.000e-04, eta: 0:16:10, time: 1.456, data_time: 0.707, memory: 8388, loss_voxel_ce_c_0: 0.6963, loss_voxel_sem_scal_c_0: 2.1503, loss_voxel_geo_scal_c_0: 0.5875, loss_voxel_lovasz_c_0: 0.6034, loss_depth: 2.3579, loss: 6.3955, grad_norm: 4.7848
+2024-05-03 03:55:20,618 - mmdet - INFO - Iter [8200/8780]	lr: 2.000e-04, eta: 0:14:52, time: 1.469, data_time: 0.709, memory: 8388, loss_voxel_ce_c_0: 0.6835, loss_voxel_sem_scal_c_0: 2.0310, loss_voxel_geo_scal_c_0: 0.5463, loss_voxel_lovasz_c_0: 0.5946, loss_depth: 2.3115, loss: 6.1668, grad_norm: 4.5807
+2024-05-03 03:56:32,406 - mmdet - INFO - Iter [8250/8780]	lr: 2.000e-04, eta: 0:13:35, time: 1.436, data_time: 0.700, memory: 8388, loss_voxel_ce_c_0: 0.7162, loss_voxel_sem_scal_c_0: 2.0356, loss_voxel_geo_scal_c_0: 0.5146, loss_voxel_lovasz_c_0: 0.5901, loss_depth: 2.2666, loss: 6.1231, grad_norm: 4.7777
+2024-05-03 03:57:45,197 - mmdet - INFO - Iter [8300/8780]	lr: 2.000e-04, eta: 0:12:18, time: 1.456, data_time: 0.701, memory: 8388, loss_voxel_ce_c_0: 0.6681, loss_voxel_sem_scal_c_0: 2.1746, loss_voxel_geo_scal_c_0: 0.5430, loss_voxel_lovasz_c_0: 0.6021, loss_depth: 2.3146, loss: 6.3024, grad_norm: 4.7466
+2024-05-03 03:58:43,666 - mmdet - INFO - Saving checkpoint at 8341 iterations
+2024-05-03 03:58:58,792 - mmdet - INFO - Iter [8350/8780]	lr: 2.000e-04, eta: 0:11:01, time: 1.472, data_time: 0.702, memory: 8388, loss_voxel_ce_c_0: 0.6957, loss_voxel_sem_scal_c_0: 2.2741, loss_voxel_geo_scal_c_0: 0.5610, loss_voxel_lovasz_c_0: 0.6136, loss_depth: 2.3056, loss: 6.4498, grad_norm: 4.7912
+2024-05-03 04:00:11,384 - mmdet - INFO - Iter [8400/8780]	lr: 2.000e-04, eta: 0:09:44, time: 1.452, data_time: 0.705, memory: 8388, loss_voxel_ce_c_0: 0.6925, loss_voxel_sem_scal_c_0: 2.2458, loss_voxel_geo_scal_c_0: 0.5682, loss_voxel_lovasz_c_0: 0.6067, loss_depth: 2.3256, loss: 6.4389, grad_norm: 4.7299
+2024-05-03 04:01:25,093 - mmdet - INFO - Iter [8450/8780]	lr: 2.000e-04, eta: 0:08:27, time: 1.474, data_time: 0.709, memory: 8388, loss_voxel_ce_c_0: 0.6847, loss_voxel_sem_scal_c_0: 2.1114, loss_voxel_geo_scal_c_0: 0.5532, loss_voxel_lovasz_c_0: 0.6037, loss_depth: 2.3185, loss: 6.2715, grad_norm: 4.4362
+2024-05-03 04:02:39,681 - mmdet - INFO - Iter [8500/8780]	lr: 2.000e-04, eta: 0:07:10, time: 1.492, data_time: 0.705, memory: 8388, loss_voxel_ce_c_0: 0.6823, loss_voxel_sem_scal_c_0: 1.9594, loss_voxel_geo_scal_c_0: 0.5641, loss_voxel_lovasz_c_0: 0.5910, loss_depth: 2.3008, loss: 6.0975, grad_norm: 4.0049
+2024-05-03 04:03:52,509 - mmdet - INFO - Iter [8550/8780]	lr: 2.000e-04, eta: 0:05:53, time: 1.457, data_time: 0.709, memory: 8388, loss_voxel_ce_c_0: 0.6947, loss_voxel_sem_scal_c_0: 2.0428, loss_voxel_geo_scal_c_0: 0.5510, loss_voxel_lovasz_c_0: 0.5913, loss_depth: 2.2113, loss: 6.0911, grad_norm: 4.8588
+2024-05-03 04:05:04,865 - mmdet - INFO - Iter [8600/8780]	lr: 2.000e-04, eta: 0:04:36, time: 1.447, data_time: 0.711, memory: 8388, loss_voxel_ce_c_0: 0.7041, loss_voxel_sem_scal_c_0: 2.1191, loss_voxel_geo_scal_c_0: 0.5501, loss_voxel_lovasz_c_0: 0.6060, loss_depth: 2.3193, loss: 6.2985, grad_norm: 4.9751
+2024-05-03 04:06:20,294 - mmdet - INFO - Iter [8650/8780]	lr: 2.000e-04, eta: 0:03:19, time: 1.508, data_time: 0.701, memory: 8388, loss_voxel_ce_c_0: 0.6873, loss_voxel_sem_scal_c_0: 1.9487, loss_voxel_geo_scal_c_0: 0.5441, loss_voxel_lovasz_c_0: 0.5954, loss_depth: 2.3126, loss: 6.0881, grad_norm: 4.0436
+2024-05-03 04:07:41,399 - mmdet - INFO - Iter [8700/8780]	lr: 2.000e-04, eta: 0:02:02, time: 1.622, data_time: 0.703, memory: 8388, loss_voxel_ce_c_0: 0.7200, loss_voxel_sem_scal_c_0: 2.0630, loss_voxel_geo_scal_c_0: 0.5594, loss_voxel_lovasz_c_0: 0.5965, loss_depth: 2.3212, loss: 6.2601, grad_norm: 4.9727
+2024-05-03 04:08:53,438 - mmdet - INFO - Iter [8750/8780]	lr: 2.000e-04, eta: 0:00:46, time: 1.441, data_time: 0.706, memory: 8388, loss_voxel_ce_c_0: 0.6939, loss_voxel_sem_scal_c_0: 1.9823, loss_voxel_geo_scal_c_0: 0.5653, loss_voxel_lovasz_c_0: 0.5995, loss_depth: 2.2540, loss: 6.0950, grad_norm: 4.2372
+2024-05-03 04:09:37,201 - mmdet - INFO - Saving checkpoint at 8780 iterations
+2024-05-03 04:15:35,007 - mmdet - INFO - Iter(val) [6019]	others: 10.0600, barrier: 36.5200, bicycle: 19.8300, bus: 39.4200, car: 44.1100, construction_vehicle: 16.2700, motorcycle: 21.2100, pedestrian: 23.6600, traffic_cone: 21.3200, trailer: 22.5300, truck: 31.5800, driveable_surface: 75.6200, other_flat: 35.6800, sidewalk: 42.9200, terrain: 47.9100, manmade: 35.2600, vegetation: 30.9300, Overall: 32.6400
+2024-05-03 04:15:36,327 - mmdet - INFO - Saving ema checkpoint at /data/lzm/projects/MSFBOcc/work_dirs/msfbocc-r50-depth-4f-16x4-half-20e/iter_8780_ema.pth

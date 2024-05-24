@@ -7,8 +7,8 @@ if __name__ == '__main__':
     # plt.style.use('seaborn-darkgrid')
     # plt.rcParams['axes.labelweight'] = 'bold'
     # Load the log file
-    log_file = 'demo_loss/fb-occ.log'
-    our_log_file = 'demo_loss/ours.log'
+    log_file = 'demo_loss_data/fb-occ.log'
+    our_log_file = 'demo_loss_data/ours.log'
     with open(log_file, 'r') as f:
         lines = f.readlines()
     with open(our_log_file, 'r') as f:
