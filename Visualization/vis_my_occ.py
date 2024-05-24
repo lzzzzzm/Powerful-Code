@@ -38,6 +38,52 @@ palette= [
     [230, 230, 250],    # manmade              white
     [0, 175, 0],        # vegetation           green
 ]
+def downsample_label(label, voxel_size=(200, 200, 16), downscale=2, dataset='occ3d'):
+    r"""downsample the labeled data,
+    code taken from https://github.com/waterljwant/SSC/blob/master/dataloaders/dataloader.py#L262
+    Shape:
+        label, (240, 144, 240)
+        label_downscale, if downsample==4, then (60, 36, 60)
+    """
+    if dataset == 'occ3d':
+        empty_cls_idx = 17
+    elif dataset == 'openocc':
+        empty_cls_idx = 16
+
+    if downscale == 1:
+        return label
+    ds = downscale
+    small_size = (
+        voxel_size[0] // ds,
+        voxel_size[1] // ds,
+        voxel_size[2] // ds,
+    )  # small size
+    label_downscale = np.zeros(small_size, dtype=np.uint8)
+    empty_t = 0.95 * ds * ds * ds  # threshold
+    s01 = small_size[0] * small_size[1]
+    label_i = np.zeros((ds, ds, ds), dtype=np.int32)
+
+    for i in range(small_size[0] * small_size[1] * small_size[2]):
+        z = int(i / s01)
+        y = int((i - z * s01) / small_size[0])
+        x = int(i - z * s01 - y * small_size[0])
+
+        label_i[:, :, :] = label[
+            x * ds : (x + 1) * ds, y * ds : (y + 1) * ds, z * ds : (z + 1) * ds
+        ]
+        label_bin = label_i.flatten()
+
+        zero_count_0 = np.array(np.where(label_bin == empty_cls_idx)).size
+
+        zero_count = zero_count_0
+        if zero_count > empty_t:
+            label_downscale[x, y, z] = empty_cls_idx
+        else:
+            label_i_s = label_bin[
+                np.where(np.logical_and(label_bin >= 0, label_bin < empty_cls_idx))
+            ]
+            label_downscale[x, y, z] = np.argmax(np.bincount(label_i_s))
+    return label_downscale
 
 def load_occ_data():
     occ_gt_data_path = 'demo_occ_data/gt_occ/0.npz'
